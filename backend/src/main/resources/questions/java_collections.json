@@ -1,0 +1,22 @@
+[
+  {"id": "jc-e1", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is the difference between an ArrayList and a LinkedList in Java, and when would you choose one over the other?"},
+  {"id": "jc-e2", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is the difference between HashMap and Hashtable?"},
+  {"id": "jc-e3", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "Why does HashSet not allow duplicate elements? What methods does it rely on to enforce that?"},
+  {"id": "jc-mcq1", "difficulty": "EASY", "questionType": "MCQ", "promptText": "Which collection interface does NOT allow duplicate elements by default?",
+    "options": ["List", "Set", "Queue", "Deque"], "correctOptionIndex": 1,
+    "explanation": "Set is defined to disallow duplicate elements; List, Queue, and Deque all permit duplicates."},
+  {"id": "jc-m1", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "Explain how a HashMap resolves collisions internally, and what happens to its performance if hashCode() is implemented poorly."},
+  {"id": "jc-m2", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "What is the difference between Comparable and Comparator? Give an example of when you'd use each."},
+  {"id": "jc-m3", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "What is a ConcurrentModificationException, and how do you safely remove elements from a list while iterating over it?"},
+  {"id": "jc-mcq2", "difficulty": "MEDIUM", "questionType": "MCQ", "promptText": "What is the time complexity of get(index) on a LinkedList in Java?",
+    "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"], "correctOptionIndex": 2,
+    "explanation": "LinkedList must traverse from the head (or tail, whichever is closer) to reach the index, making get(index) O(n), unlike ArrayList's O(1)."},
+  {"id": "jc-h1", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "Explain how HashMap's internal structure changed between Java 7 and Java 8 (treeification of buckets), and why that change was made."},
+  {"id": "jc-h2", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "How does ConcurrentHashMap achieve thread safety without locking the entire map, and how does this differ from a synchronized HashMap?"},
+  {"id": "jc-h3", "difficulty": "HARD", "questionType": "CODING", "promptText": "Design and implement a fixed-capacity LRU cache using Java collections, achieving O(1) get and put operations.",
+    "ioFormat": "Line 1: cache capacity. Line 2: number of operations q. Next q lines: either 'PUT key value' or 'GET key'. For each GET, print the returned value on its own line (-1 if not present or evicted).",
+    "testCases": [
+      {"input": "2\n6\nPUT 1 1\nPUT 2 2\nGET 1\nPUT 3 3\nGET 2\nGET 3", "expectedOutput": "1\n-1\n3"},
+      {"input": "1\n4\nPUT 1 1\nGET 1\nPUT 2 2\nGET 1", "expectedOutput": "1\n-1"}
+    ]}
+]

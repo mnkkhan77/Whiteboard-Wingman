@@ -1,0 +1,3068 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07-SPRING-CORE.html</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    line-height:1.7;
+    margin:40px;
+    background:#f4f6f8;
+    color:#222;
+}
+h1,h2,h3,h4{
+    color:#1f4e79;
+}
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:8px;
+    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+}
+.question{
+    color:#c0392b;
+    font-weight:bold;
+    font-size:20px;
+}
+.answer{
+    margin-top:10px;
+}
+.roi{
+    color:green;
+    font-weight:bold;
+}
+.followup{
+    background:#fff8dc;
+    padding:10px;
+    border-left:4px solid orange;
+    margin-top:10px;
+}
+pre{
+    background:#f4f4f4;
+    padding:10px;
+    border-radius:4px;
+    overflow:auto;
+}
+table{
+    border-collapse:collapse;
+    margin:10px 0;
+}
+th,td{
+    border:1px solid #ccc;
+    padding:6px 10px;
+    text-align:left;
+}
+th{
+    background:#1f4e79;
+    color:white;
+}
+</style>
+</head>
+<body>
+
+<h1 id="h1">09 - SPRING CORE INTERVIEW HANDBOOK</h1>
+
+<p>
+
+This is one of the highest ROI sections for Spring Boot interviews.
+
+Most interviewers start with Spring Core before moving into:
+
+* Spring Boot
+* Spring Security
+* JPA/Hibernate
+* Microservices
+
+A surprising number of developers use Spring daily but cannot explain:
+
+* How Dependency Injection actually works
+* Bean Lifecycle
+* Bean Scopes
+* AOP Internals
+* Proxy Pattern
+* Transaction Management
+
+These are favorite senior-level interview topics.
+
+</p>
+
+<hr>
+
+<h1 id="h2">TOP ROI QUESTIONS</h1>
+
+<ol>
+
+<li>What Is Spring Framework?</li>
+<li>What Is IoC?</li>
+<li>What Is Dependency Injection?</li>
+<li>Constructor vs Field Injection</li>
+<li>Bean Lifecycle</li>
+<li>Bean Scopes</li>
+<li>@Component vs @Service vs @Repository</li>
+<li>ApplicationContext vs BeanFactory</li>
+<li>What Is AOP?</li>
+<li>How @Transactional Works?</li>
+<li>Proxy Pattern</li>
+<li>Circular Dependency</li>
+<li>Spring Bean Creation Process</li>
+
+</ol>
+
+<hr>
+
+<h1 id="h3">SECTION 1 - SPRING FUNDAMENTALS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q1">
+Q1. What Is Spring Framework?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Spring is an enterprise Java framework that simplifies application development through:
+</p>
+
+<ul>
+
+<li>Dependency Injection</li>
+
+<li>Inversion Of Control</li>
+
+<li>AOP</li>
+
+<li>Transaction Management</li>
+
+<li>Integration Support</li>
+
+</ul>
+
+<p>
+At its heart, Spring is a container that creates and wires your objects for you. Instead of classes constructing their own collaborators, the framework manages object creation, configuration and lifecycle, which inverts the traditional flow of control. This single idea is what makes the rest of the ecosystem possible.
+</p>
+
+<p>
+Around that core, Spring layers powerful infrastructure: AOP for cross-cutting concerns like logging and security, declarative transaction management, and a vast set of integrations for databases, messaging and web. Spring Boot then sits on top of all of this to provide auto-configuration and opinionated defaults, which is why most modern Java teams build on the Spring stack.
+</p>
+
+</div>
+
+<h3>Benefits</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Loose Coupling</li>
+
+<li>Testability</li>
+
+<li>Maintainability</li>
+
+<li>Scalability</li>
+
+</ul>
+
+<p>
+Because dependencies are injected rather than hard-coded, classes depend on abstractions rather than concrete implementations. This loose coupling is what makes Spring code easy to unit test (you can inject mocks) and easy to evolve (you can swap implementations without editing callers), which directly translates into long-term maintainability on large teams.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q2">
+Q2. What Problems Did Spring Solve?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Before Spring</h3>
+
+<pre>
+
+UserService service =
+new UserService();
+
+</pre>
+
+<div class="answer">
+
+<p>
+Application manually created dependencies. Every class was responsible for constructing the objects it needed, so the wiring logic was scattered throughout the codebase. This created tight coupling: a class was bound to a specific concrete implementation, and changing that implementation meant editing every place that constructed it.
+</p>
+
+<p>
+Manual wiring also made unit testing painful. Because a class created its own collaborators with new, there was no clean way to substitute a mock or stub, so tests often required a real database or external service to run at all.
+</p>
+
+</div>
+
+<h3>With Spring</h3>
+
+<div class="answer">
+
+<p>
+Container manages dependencies. Spring builds the object graph for you and injects collaborators where they are needed, so wiring lives in one place (configuration) instead of being duplicated across the application.
+</p>
+
+<p>
+This promotes loose coupling. Classes declare what they need through interfaces, and the container supplies an implementation at runtime. The result is code that is easier to test, configure and refactor, because the dependency relationships are explicit and externally controlled rather than hard-wired.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h4">SECTION 2 - IOC (INVERSION OF CONTROL)</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q3">
+Q3. What Is IoC?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Short Answer</h3>
+
+<div class="answer">
+
+<p>
+Control of object creation is transferred from application code to the Spring container. Instead of your code deciding when and how to build its dependencies, the framework takes over that responsibility, which is why it is called "inversion" of control.
+</p>
+
+</div>
+
+<h3>Without IoC</h3>
+
+<pre>
+
+UserRepository repo =
+new UserRepository();
+
+</pre>
+
+<h3>With IoC</h3>
+
+<pre>
+
+@Autowired
+
+UserRepository repo;
+
+</pre>
+
+<div class="answer">
+
+<p>
+Spring creates and manages the object. In the first example the class explicitly constructs its dependency and is locked to that concrete type. In the second, the class simply declares that it needs a UserRepository and the container provides one, so the class no longer knows or cares how that dependency is built.
+</p>
+
+<p>
+The practical payoff is that you can change which implementation is supplied (for example a real repository in production and a mock in tests) without touching the consuming class. IoC is the general principle; Dependency Injection is the specific technique Spring uses to achieve it.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q4">
+Q4. What Is IoC Container?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+The IoC container is the core Spring component responsible for:
+</p>
+
+<ul>
+
+<li>Bean Creation</li>
+
+<li>Dependency Injection</li>
+
+<li>Lifecycle Management</li>
+
+<li>Configuration Management</li>
+
+</ul>
+
+<p>
+The container reads bean definitions (from annotations, Java config or XML), instantiates the objects, resolves and injects their dependencies in the correct order, and manages them from creation through destruction. It is essentially a factory and registry combined: it knows how to build every managed object and hands out the right instances on demand.
+</p>
+
+<p>
+In Spring this container is represented by the ApplicationContext. Understanding that "the container" is just the runtime engine driving creation, wiring and lifecycle is the foundation for explaining bean scopes, lifecycle callbacks and proxy creation later in the interview.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h5">SECTION 3 - DEPENDENCY INJECTION</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q5">
+Q5. What Is Dependency Injection?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Dependency Injection (DI) means dependencies are provided to an object externally instead of being created internally. Rather than a class calling new to build its collaborators, the container passes them in, typically through the constructor.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@Service
+public class UserService {
+
+   private final UserRepository repo;
+
+   public UserService(
+      UserRepository repo
+   ){
+      this.repo = repo;
+   }
+}
+
+</pre>
+
+<div class="answer">
+
+<p>
+Here UserService never constructs a UserRepository; it simply declares that it requires one in its constructor, and Spring supplies the bean at startup. This keeps the class focused on its own logic and decoupled from how its dependency is built or configured.
+</p>
+
+<p>
+DI is the concrete mechanism that implements Inversion of Control. It makes dependencies explicit (you can see exactly what a class needs by reading its constructor) and makes the class trivially testable, because a test can pass in a mock repository directly without involving the Spring container at all.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q6">
+Q6. Types Of Dependency Injection
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+
+<li>Constructor Injection</li>
+
+<li>Setter Injection</li>
+
+<li>Field Injection</li>
+
+</ul>
+
+<p>
+Constructor injection supplies dependencies through the constructor and is the recommended approach, because it makes dependencies mandatory and allows them to be final. Setter injection supplies them through setter methods, which is useful for genuinely optional dependencies that may be reconfigured after construction.
+</p>
+
+<p>
+Field injection places the dependency directly onto a field using @Autowired. It is the most concise to write but is discouraged because it hides dependencies, prevents fields from being final, and makes the class hard to instantiate in a plain unit test without reflection or the Spring container.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q7">
+Q7. Constructor Injection vs Field Injection
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>Constructor</th>
+<th>Field</th>
+</tr>
+
+<tr>
+<td>Immutable</td>
+<td>Mutable</td>
+</tr>
+
+<tr>
+<td>Test Friendly</td>
+<td>Harder To Test</td>
+</tr>
+
+<tr>
+<td>Recommended</td>
+<td>Avoid</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+Constructor injection lets dependencies be declared final, so the object is fully initialized and immutable once constructed, and it cannot exist in a half-wired state. Field injection assigns dependencies via reflection after construction, so fields cannot be final and an object can momentarily exist without its collaborators.
+</p>
+
+<p>
+Testability is the other major difference. With constructor injection you simply call new with mock dependencies in a unit test. With field injection there is no constructor to pass mocks to, so you must rely on reflection or spin up a Spring context, which makes tests slower and more brittle.
+</p>
+
+</div>
+
+<h3>Senior Engineer Answer</h3>
+
+<div class="answer">
+
+<p>
+Constructor injection should be preferred. Dependencies become mandatory and explicit: the compiler and the container both guarantee that every required collaborator is supplied before the bean is usable.
+</p>
+
+<p>
+A practical signal of poor design is a constructor with too many parameters. With field injection that smell is hidden, but with constructor injection it becomes visible and pushes you to split the class, which is exactly why senior engineers favour it.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q8">
+Q8. Why Is Constructor Injection Preferred?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Immutability</li>
+
+<li>Testability</li>
+
+<li>No Null Dependencies</li>
+
+<li>Clear Design</li>
+
+<li>Better Maintainability</li>
+
+</ul>
+
+<p>
+Because dependencies are passed in once at construction, the fields can be final, giving an immutable, fully-formed object that is inherently safer to share across threads. There is no window in which the bean exists with null collaborators, which eliminates a class of NullPointerExceptions that field injection can allow during partial initialization.
+</p>
+
+<p>
+It also makes the design self-documenting and maintainable: the constructor signature lists every dependency the class has, so reviewers can immediately see its responsibilities. Modern Spring even injects a single constructor automatically without requiring @Autowired, so there is no extra boilerplate cost to doing the right thing.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h6">SECTION 4 - BEANS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q9">
+Q9. What Is A Spring Bean?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A Spring bean is simply an object that is instantiated, assembled and managed by the Spring IoC container. The container controls its creation, dependency injection and lifecycle, which is what distinguishes a bean from an ordinary object you create with new.
+</p>
+
+<p>
+Beans are typically declared through stereotype annotations or @Bean methods, and they are registered in the application context under a name. When another bean needs one, the container resolves and injects the appropriate instance, which is the foundation of how Spring applications are wired together.
+</p>
+
+</div>
+
+<h3>Examples</h3>
+
+<pre>
+
+@Service
+
+@Repository
+
+@Component
+
+@Controller
+
+</pre>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q10">
+Q10. Bean Lifecycle
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Lifecycle</h3>
+
+<pre>
+
+Instantiate
+
+↓
+
+Populate Dependencies
+
+↓
+
+@PostConstruct
+
+↓
+
+Ready For Use
+
+↓
+
+@PreDestroy
+
+</pre>
+
+<div class="answer">
+
+<p>
+The container first instantiates the bean, then populates its dependencies (constructor or field/setter injection). After the dependencies are wired, any @PostConstruct method runs, which is the safe place to perform initialization that relies on those dependencies being present.
+</p>
+
+<p>
+The bean then remains ready for use for as long as the container is alive. When the context is shutting down, the container invokes any @PreDestroy method so the bean can release resources. Understanding this ordering matters in practice: putting initialization logic in the constructor is risky because dependencies are not yet injected, whereas @PostConstruct runs only after wiring is complete.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q11">
+Q11. What Is @PostConstruct?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@PostConstruct marks a method that Spring executes after dependency injection completes but before the bean is put into service. It is the canonical place for one-time startup logic that needs the bean's dependencies to already be wired.
+</p>
+
+</div>
+
+<h3>Use Cases</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Cache Initialization</li>
+
+<li>Configuration Validation</li>
+
+<li>Startup Logic</li>
+
+</ul>
+
+<p>
+Typical uses include warming a cache, validating that injected configuration values are present and sensible, or opening a connection. Because it runs after injection, it can safely call the methods of injected collaborators, which a constructor cannot always do reliably.
+</p>
+
+<p>
+A common interview point is why you should not do this work in the constructor: at construction time field-injected dependencies may still be null, and putting heavy logic in a constructor makes the object harder to test. @PostConstruct cleanly separates "build the object" from "initialize the object."
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q12">
+Q12. What Is @PreDestroy?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@PreDestroy marks a method that Spring calls just before a bean is destroyed, which happens during graceful shutdown of the application context. It gives the bean a final chance to clean up before it is discarded.
+</p>
+
+</div>
+
+<h3>Use Cases</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Close Resources</li>
+
+<li>Flush Buffers</li>
+
+<li>Cleanup Logic</li>
+
+</ul>
+
+<p>
+Common uses are closing connection pools or files, flushing buffered data, and shutting down background threads or schedulers so the JVM can exit cleanly. This is important for production reliability, because skipping cleanup can leak connections or lose buffered writes during deployment restarts.
+</p>
+
+<p>
+Note that @PreDestroy is only reliably invoked for singleton beans during an orderly context shutdown; it is not called for prototype beans, since Spring does not manage their full lifecycle after creation.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h7">SECTION 5 - BEAN SCOPES</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q13">
+Q13. Bean Scopes In Spring
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+
+<li>Singleton</li>
+
+<li>Prototype</li>
+
+<li>Request</li>
+
+<li>Session</li>
+
+<li>Application</li>
+
+</ul>
+
+<p>
+A scope defines how many instances of a bean the container creates and how long each lives. Singleton (the default) means exactly one shared instance per container; prototype means a brand new instance every time the bean is requested.
+</p>
+
+<p>
+Request, session and application are web-aware scopes: a request-scoped bean lives for one HTTP request, a session-scoped bean lives for one user session, and an application-scoped bean is shared across the whole web application. Choosing the right scope is mainly about state management — stateless logic belongs in singletons, while per-user or per-request state needs the narrower web scopes.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q14">
+Q14. What Is Singleton Scope?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Singleton scope means one bean instance per Spring container, and it is the default scope. Every component that depends on that bean receives the same shared instance, which is created eagerly when the context starts.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@Service
+
+public class UserService {}
+
+</pre>
+
+<div class="answer">
+
+<p>
+Note that Spring's singleton is "one per container," which is different from the classic Gang of Four singleton pattern of "one per JVM/classloader." Singletons are efficient because the object is built once and reused, but precisely because they are shared, they must be designed carefully when it comes to mutable state.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q15">
+Q15. Singleton Bean Thread Safety
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Important Answer</h3>
+
+<div class="answer">
+
+<p>
+Singleton does NOT mean thread safe. The "singleton" guarantee is only about instance count (one shared instance), not about concurrent access protection.
+</p>
+
+<p>
+Multiple requests may access the same bean simultaneously, because in a web application many threads share that one instance. Therefore you must avoid mutable shared state in a singleton bean: instance fields that change per request will be corrupted by concurrent access and produce data leaking between users.
+</p>
+
+<p>
+The standard rule is to keep singleton beans stateless. Pass request-specific data as method parameters or local variables (which live on each thread's stack), and store any genuinely shared mutable state in thread-safe structures or in the database rather than in bean fields.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+This question is asked extremely often, because it separates engineers who merely use Spring from those who understand its concurrency model. A strong answer states plainly that singleton refers to instance count, not safety, and then explains the practical defence: keep services stateless and never store per-request data in instance fields.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q16">
+Q16. What Is Prototype Scope?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Prototype scope means a new bean instance is created every time the bean is requested from the container. Unlike a singleton, no instance is shared, so each injection point or getBean call receives its own fresh object.
+</p>
+
+<p>
+A key subtlety is that Spring only manages a prototype bean up to creation and injection; it does not call its destruction callbacks, so cleanup of prototype beans is the caller's responsibility. Prototype scope is useful for beans that hold per-use mutable state, but injecting a prototype into a singleton is a common trap, since the singleton captures one prototype instance at startup unless you use a provider or method injection.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h8">PART 1 COMPLETE</h1>
+
+<p>
+
+Next Part:
+
+* @Component vs @Service vs @Repository
+* ApplicationContext
+* BeanFactory
+* Circular Dependencies
+* AOP
+* Proxy Pattern
+* Spring Internals
+* Transaction Management Foundations
+
+These are some of the most frequently asked Spring Core topics in senior interviews.
+
+</p>
+<!-- CONTINUATION OF 07-SPRING-CORE.html -->
+
+<!-- PART 2 - STEREOTYPES, APPLICATION CONTEXT, AOP, PROXIES -->
+
+<hr>
+
+<h1 id="h9">SECTION 6 - STEREOTYPE ANNOTATIONS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q17">
+Q17. What Is @Component?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@Component marks a class as a generic Spring-managed bean so that component scanning detects it and registers it in the container. It is the base stereotype from which the more specialized annotations are derived.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@Component
+public class EmailUtil {
+
+}
+
+</pre>
+
+<div class="answer">
+
+<p>
+Use @Component when a class does not fit one of the specialized stereotypes such as a service, repository or controller. Utility helpers, mappers and general infrastructure beans are typical candidates.
+</p>
+
+<p>
+Functionally @Service, @Repository and @Controller are all themselves annotated with @Component, so they are detected the same way. The difference is purely the semantic intent they communicate and, in some cases, extra framework behaviour layered on top.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q18">
+Q18. What Is @Service?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@Service marks a class as part of the business logic layer. Technically it behaves like @Component, but it expresses the intent that this bean holds the application's core service logic.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@Service
+public class UserService {
+
+}
+
+</pre>
+
+<h3>Purpose</h3>
+
+<div class="answer">
+
+<p>
+Its main value is improving readability and architectural clarity: anyone reading the codebase can immediately tell which classes orchestrate business rules. This keeps the layered architecture (controller → service → repository) self-evident.
+</p>
+
+<p>
+By convention, transactional boundaries and business orchestration live in the service layer, which is why @Transactional is most commonly placed on @Service methods rather than on controllers or repositories.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q19">
+Q19. What Is @Repository?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@Repository marks a class as part of the persistence layer, the layer responsible for data access. Like the other stereotypes it is a specialization of @Component, so it is picked up by component scanning.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@Repository
+public class UserRepository {
+
+}
+
+</pre>
+
+<h3>Special Feature</h3>
+
+<div class="answer">
+
+<p>
+@Repository automatically translates database exceptions into Spring's DataAccessException hierarchy. This means low-level, vendor-specific exceptions like SQLException are converted into a consistent, unchecked set of Spring exceptions.
+</p>
+
+<p>
+This translation is valuable because it decouples your code from the underlying persistence technology and removes the need to handle checked SQL exceptions everywhere. It is enabled by a BeanPostProcessor that wraps repository beans, which is a nice example of stereotype annotations carrying real behaviour, not just intent.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q20">
+Q20. What Is @Controller?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@Controller marks a class as a web layer component that handles incoming HTTP requests. In a traditional MVC application it returns the logical name of a view (such as a JSP or Thymeleaf template) which is then rendered into HTML.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@Controller
+
+</pre>
+
+<div class="answer">
+
+<p>
+Methods inside a @Controller are mapped to URLs with annotations like @GetMapping and @PostMapping. The return value is interpreted by a view resolver, which is the key distinction from @RestController, where the return value is serialized directly into the response body.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q21">
+Q21. What Is @RestController?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@RestController is a convenience annotation that combines:
+</p>
+
+</div>
+
+<pre>
+
+@Controller
+
++
+
+@ResponseBody
+
+</pre>
+
+<div class="answer">
+
+<p>
+It returns JSON/XML directly. Because @ResponseBody is applied to every method, the return value is serialized straight into the HTTP response body (typically as JSON via Jackson) instead of being resolved to a view.
+</p>
+
+<p>
+This is the standard annotation for building REST APIs and microservice endpoints, which is why it appears in almost every Spring Boot service. You use @Controller for server-rendered pages and @RestController for data APIs that the frontend or other services consume.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q22">
+Q22. @Component vs @Service vs @Repository
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>Annotation</th>
+<th>Purpose</th>
+</tr>
+
+<tr>
+<td>@Component</td>
+<td>Generic Bean</td>
+</tr>
+
+<tr>
+<td>@Service</td>
+<td>Business Layer</td>
+</tr>
+
+<tr>
+<td>@Repository</td>
+<td>Persistence Layer</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+All three register a bean through component scanning, and @Service and @Repository are themselves meta-annotated with @Component. So at the level of bean detection and injection, they are interchangeable.
+</p>
+
+<p>
+The differences are semantic and behavioural. @Component is the generic catch-all; @Service signals business logic; and @Repository signals data access and additionally enables exception translation into Spring's DataAccessException hierarchy. Choosing the correct stereotype documents your architecture and, in the repository case, activates real framework behaviour.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Technically all are Spring beans. The difference is semantic intent and additional behavior. The strongest answer notes that the only one with extra runtime behaviour is @Repository (persistence exception translation), while @Service and @Component differ only in the intent they communicate to the reader.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h10">SECTION 7 - APPLICATIONCONTEXT</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q23">
+Q23. What Is ApplicationContext?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+ApplicationContext is the advanced Spring IoC container and the central interface for accessing beans in a Spring application. It builds on the basic BeanFactory and adds enterprise-grade features on top of plain dependency injection.
+</p>
+
+<p>
+It is responsible for:
+</p>
+
+<ul>
+
+<li>Bean Management</li>
+
+<li>Dependency Injection</li>
+
+<li>Events</li>
+
+<li>AOP Integration</li>
+
+<li>Internationalization</li>
+
+</ul>
+
+<p>
+Beyond creating and wiring beans, the ApplicationContext publishes and listens to application events, integrates AOP proxy creation, supports message sources for internationalization, and resolves resources and property sources. This is why it is the container used in virtually every real Spring application, with Spring Boot creating one for you automatically at startup.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q24">
+Q24. BeanFactory vs ApplicationContext
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>BeanFactory</th>
+<th>ApplicationContext</th>
+</tr>
+
+<tr>
+<td>Basic Container</td>
+<td>Advanced Container</td>
+</tr>
+
+<tr>
+<td>Lazy Loading</td>
+<td>Eager Singleton Loading</td>
+</tr>
+
+<tr>
+<td>Minimal Features</td>
+<td>Enterprise Features</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+BeanFactory is the most basic container, providing only core dependency injection, and it instantiates beans lazily, meaning a bean is created the first time it is requested. ApplicationContext extends BeanFactory and adds the enterprise features described earlier, while eagerly creating singleton beans at startup.
+</p>
+
+<p>
+Eager creation is actually a practical advantage: configuration errors and wiring problems surface immediately at startup (fail fast) rather than later when a bean is first used in production. This is one reason ApplicationContext is preferred.
+</p>
+
+</div>
+
+<h3>Interview Answer</h3>
+
+<div class="answer">
+
+<p>
+ApplicationContext is used almost everywhere in modern Spring applications. BeanFactory is essentially an internal, lower-level abstraction; you would only choose it directly in extremely memory-constrained environments where lazy initialization matters, which is rare in practice.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q25">
+Q25. How Does Spring Find Beans?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Spring finds beans primarily through component scanning. At startup the container scans configured packages, detects classes annotated with stereotype annotations, and registers each as a bean definition.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@SpringBootApplication
+
+</pre>
+
+<div class="answer">
+
+<p>
+Includes:
+</p>
+
+</div>
+
+<pre>
+
+@ComponentScan
+
+</pre>
+
+<div class="answer">
+
+<p>
+Spring scans packages and registers beans. @SpringBootApplication is a composed annotation that bundles @ComponentScan (along with @Configuration and @EnableAutoConfiguration), so by default scanning starts from the package of your main application class and covers everything beneath it.
+</p>
+
+<p>
+This is why bean placement matters: a component sitting outside the main application package will not be picked up unless you explicitly widen the scan. Besides scanning, beans can also be defined explicitly with @Bean methods inside @Configuration classes, which is how you register third-party objects you cannot annotate.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h11">SECTION 8 - CIRCULAR DEPENDENCIES</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q26">
+Q26. What Is Circular Dependency?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Example</h3>
+
+<pre>
+
+UserService
+
+↓
+
+OrderService
+
+↓
+
+UserService
+
+</pre>
+
+<div class="answer">
+
+<p>
+A circular dependency occurs when two or more beans depend on each other, directly or transitively, forming a cycle. In the example UserService needs OrderService and OrderService needs UserService back, so neither can be fully constructed before the other.
+</p>
+
+<p>
+With constructor injection this is unresolvable by default, because Spring cannot build either object first, and the container fails at startup with a BeanCurrentlyInCreationException. Spring can sometimes resolve a cycle when setter or field injection is used, by injecting a partially-constructed reference, but the cleanest treatment is to avoid the cycle in the first place.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q27">
+Q27. Why Are Circular Dependencies Dangerous?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+
+<li>Tight Coupling</li>
+
+<li>Hard Testing</li>
+
+<li>Initialization Problems</li>
+
+<li>Poor Design</li>
+
+</ul>
+
+<p>
+A cycle is usually a symptom of muddled responsibilities: two classes know too much about each other, which is tight coupling that makes the code rigid and hard to change. It also makes testing harder, because you cannot exercise one class in isolation without dragging in the other.
+</p>
+
+<p>
+Beyond design, cycles cause concrete initialization problems. The container may fail to start, or may inject a not-yet-fully-initialized bean, leading to subtle null or partially-configured state at runtime. Senior interviewers treat a circular dependency as a design smell signalling that the responsibilities should be re-partitioned.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q28">
+Q28. How To Resolve Circular Dependency?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Approaches</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Refactor Design</li>
+
+<li>Introduce New Service</li>
+
+<li>@Lazy (Temporary Fix)</li>
+
+</ul>
+
+<p>
+The best fix is to refactor so the cycle disappears. Often the two beans share logic that belongs in a third collaborator; extracting that shared responsibility into a new service breaks the loop and clarifies ownership.
+</p>
+
+<p>
+Tactical workarounds exist but should be seen as stopgaps. @Lazy on one of the dependencies injects a proxy that defers resolution until first use, and setter/field injection can sometimes let the container resolve the cycle. These hide the symptom rather than fixing the underlying design.
+</p>
+
+</div>
+
+<h3>Senior Answer</h3>
+
+<div class="answer">
+
+<p>
+Refactoring is preferred. Reaching for @Lazy or switching injection styles to silence the error treats the symptom, whereas redesigning the responsibilities removes the root cause and leaves cleaner, more testable code.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h12">SECTION 9 - SPRING AOP</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q29">
+Q29. What Is AOP?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+AOP stands for Aspect-Oriented Programming. It is a paradigm that separates cross-cutting concerns — behaviour that would otherwise be duplicated across many classes — from the core business logic, so that logic stays clean and focused.
+</p>
+
+</div>
+
+<h3>Examples</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Logging</li>
+
+<li>Security</li>
+
+<li>Transactions</li>
+
+<li>Caching</li>
+
+<li>Auditing</li>
+
+</ul>
+
+<p>
+These concerns are "cross-cutting" because they apply across many unrelated methods regardless of what those methods actually do. Instead of scattering logging or security checks into every method, AOP lets you define that behaviour once in an aspect and apply it declaratively wherever it is needed.
+</p>
+
+<p>
+Crucially, Spring itself is built on AOP: declarative transactions (@Transactional), method security and caching annotations are all implemented as aspects under the hood. Understanding AOP therefore explains how a lot of Spring's "magic" actually works.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q30">
+Q30. Why AOP?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Without AOP</h3>
+
+<div class="answer">
+
+<p>
+Repeated logging code everywhere. The same boilerplate (start log, end log, timing, error handling) gets copied into every method, which clutters the business logic, invites inconsistency, and is painful to change because a single tweak must be applied in dozens of places.
+</p>
+
+</div>
+
+<h3>With AOP</h3>
+
+<div class="answer">
+
+<p>
+Logging is centralized in one aspect and applied to the targeted methods automatically, so business code stays clean and expresses only what it actually does.
+</p>
+
+<p>
+The deeper benefit is the single-responsibility principle at the system level: each concern lives in exactly one place. Change the logging format, the security rule, or the transaction policy once, and it applies everywhere consistently, which dramatically improves maintainability for large codebases.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q31">
+Q31. Core AOP Concepts
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>Concept</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>Aspect</td>
+<td>Cross-Cutting Logic</td>
+</tr>
+
+<tr>
+<td>Advice</td>
+<td>Action Executed</td>
+</tr>
+
+<tr>
+<td>Join Point</td>
+<td>Execution Point</td>
+</tr>
+
+<tr>
+<td>Pointcut</td>
+<td>Join Point Selection</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+An aspect is the module that packages a cross-cutting concern (for example a LoggingAspect). Advice is the actual code that runs, and it is tied to a moment in execution such as before or after a method. A join point is a point in program execution where advice could be applied; in Spring AOP this is always a method execution.
+</p>
+
+<p>
+A pointcut is an expression that selects which join points the advice applies to, for example "all methods in the service package." Putting it together: the aspect uses a pointcut to decide where, and advice to decide what, to run. This vocabulary is frequently quizzed verbatim, so being precise about each term matters.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q32">
+Q32. Types Of Advice
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+
+<li>@Before</li>
+
+<li>@After</li>
+
+<li>@AfterReturning</li>
+
+<li>@AfterThrowing</li>
+
+<li>@Around</li>
+
+</ul>
+
+<p>
+@Before runs before the target method; @After runs after it regardless of outcome (like a finally block). @AfterReturning runs only when the method completes successfully and can inspect the returned value, while @AfterThrowing runs only when the method throws an exception and can inspect it.
+</p>
+
+<p>
+@Around is the most flexible: it wraps the entire invocation, deciding whether and when to proceed to the target, and it can modify arguments, alter the return value, or swallow and translate exceptions. The other four cover the common cases more declaratively, so you reach for @Around only when you genuinely need full control.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q33">
+Q33. Which Advice Is Most Powerful?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<pre>
+
+@Around
+
+</pre>
+
+<div class="answer">
+
+<p>
+@Around is the most powerful advice type. It surrounds the join point and is handed a ProceedingJoinPoint, giving it complete control over the invocation. It can:
+</p>
+
+<ul>
+
+<li>Run logic before the method</li>
+
+<li>Run logic after the method</li>
+
+<li>Modify the return value</li>
+
+<li>Handle or transform exceptions</li>
+
+</ul>
+
+<p>
+Because it can also choose not to call proceed() at all, it can short-circuit the method entirely, which is exactly how caching aspects return a cached value without invoking the target. This power comes with responsibility: forgetting to call proceed() silently prevents the real method from ever running, a classic @Around bug.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h13">SECTION 10 - PROXY PATTERN</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q34">
+Q34. How Does Spring AOP Work Internally?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Spring AOP works using proxies. When a bean needs advice applied, Spring does not give callers the raw object; instead it wraps the target bean in a proxy and injects the proxy in its place.
+</p>
+
+</div>
+
+<pre>
+
+Client
+
+↓
+
+Proxy
+
+↓
+
+Actual Bean
+
+</pre>
+
+<div class="answer">
+
+<p>
+The proxy intercepts every method call, executes the additional behavior (the advice) before and/or after delegating, and then calls the real bean. This is why AOP in Spring is proxy-based and method-level only: the proxy sits between the caller and the target, so it can only intercept calls that actually pass through it.
+</p>
+
+<p>
+This proxy mechanism is the single most important fact behind several interview favourites — it explains the self-invocation problem with @Transactional, why private and final methods cannot be advised, and how features like transactions and caching are wired in transparently.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q35">
+Q35. What Is JDK Dynamic Proxy?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A JDK dynamic proxy is a proxy implementation based on interfaces, created using the reflection API built into the JDK. The generated proxy implements the same interface(s) as the target and routes calls through an invocation handler.
+</p>
+
+</div>
+
+<h3>Requirement</h3>
+
+<div class="answer">
+
+<p>
+The target bean must implement an interface, because the JDK proxy works by creating a new class that implements that interface. If the bean exposes no interface, Spring cannot use a JDK proxy and falls back to CGLIB instead.
+</p>
+
+<p>
+A practical consequence is that callers must depend on the interface type, not the concrete class. Injecting the concrete implementation type when a JDK proxy is in play can lead to a ClassCastException, which is why coding to interfaces is the safe default.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q36">
+Q36. What Is CGLIB Proxy?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A CGLIB proxy creates a subclass of the target class dynamically at runtime and overrides its methods to insert the advice. Because it extends the class itself, it does not require any interface.
+</p>
+
+</div>
+
+<h3>Used When</h3>
+
+<div class="answer">
+
+<p>
+CGLIB is used when no interface exists on the target bean. Modern Spring Boot actually defaults to CGLIB proxying for most cases, even when interfaces are present, to avoid the surprises of interface-based proxies.
+</p>
+
+<p>
+Because CGLIB works by subclassing and overriding, the target class and the methods being advised cannot be final, and they cannot be private or static, since those cannot be overridden. This is a key reason marking a @Transactional method final silently breaks the transaction.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q37">
+Q37. JDK Proxy vs CGLIB
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>JDK Proxy</th>
+<th>CGLIB</th>
+</tr>
+
+<tr>
+<td>Interface Required</td>
+<td>No Interface Needed</td>
+</tr>
+
+<tr>
+<td>Proxy Interface</td>
+<td>Proxy Subclass</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+A JDK proxy implements the target's interface and is part of the JDK itself, so it requires the bean to expose an interface. CGLIB generates a runtime subclass of the concrete class, so it needs no interface but cannot proxy final classes or final/private methods.
+</p>
+
+<p>
+In practice the rule is: if the bean has an interface, Spring can use a JDK proxy; if not, it uses CGLIB. Spring Boot leans toward CGLIB by default to keep behaviour consistent. The reason this matters in interviews is that the proxying strategy directly explains common "my AOP/transaction did not apply" bugs.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h14">PART 2 COMPLETE</h1>
+
+<p>
+
+Next Part:
+
+* @Transactional
+* Transaction Propagation
+* Isolation Levels
+* Self Invocation Problem
+* Transaction Internals
+* Bean Creation Internals
+* Spring Startup Flow
+* Most Asked Senior Spring Questions
+
+These topics appear constantly in Spring Boot interviews.
+
+</p>
+
+<!-- CONTINUATION OF 07-SPRING-CORE.html -->
+
+<!-- PART 3 - TRANSACTIONS, SPRING INTERNALS, SENIOR QUESTIONS -->
+
+<hr>
+
+<h1 id="h15">SECTION 11 - TRANSACTION MANAGEMENT</h1>
+
+<p>
+
+This is one of the most frequently asked Spring interview topics.
+
+For 4+ years experience, interviewers almost always ask:
+
+* What is @Transactional?
+* How does it work internally?
+* Why does it sometimes fail?
+* What are propagation levels?
+
+A weak answer:
+
+"@Transactional manages database transactions."
+
+A strong answer explains proxies, transaction managers and propagation.
+
+</p>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q38">
+Q38. What Is A Transaction?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A transaction is a unit of work that must be completed entirely or rolled back entirely. It groups one or more operations so that they succeed together or, on failure, leave the system as if none of them had happened.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+Debit Account
+
+Credit Account
+
+</pre>
+
+<div class="answer">
+
+<p>
+In a money transfer, the debit and credit are two operations that form one logical action. Both succeed, or both fail. If the debit succeeded but the credit failed and was not rolled back, money would vanish, which is exactly the inconsistency transactions exist to prevent.
+</p>
+
+<p>
+This all-or-nothing guarantee is what the database and Spring's transaction manager coordinate, and it is the foundation for the ACID properties discussed next.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q39">
+Q39. What Is ACID?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>Atomicity</td>
+<td>All Or Nothing</td>
+</tr>
+
+<tr>
+<td>Consistency</td>
+<td>Valid State</td>
+</tr>
+
+<tr>
+<td>Isolation</td>
+<td>Concurrent Safety</td>
+</tr>
+
+<tr>
+<td>Durability</td>
+<td>Persisted Permanently</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+Atomicity means a transaction's operations are indivisible — they all commit or all roll back. Consistency means a transaction moves the database from one valid state to another, never leaving it violating its constraints. Isolation means concurrent transactions do not interfere with each other in ways that produce incorrect results. Durability means once a transaction commits, its effects survive crashes and restarts because they are persisted to stable storage.
+</p>
+
+<p>
+These four properties are what distinguish a relational database transaction from a simple sequence of writes. Isolation in particular is the property whose strictness you tune via isolation levels, which trade concurrency against the risk of phenomena like dirty reads.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q40">
+Q40. What Is @Transactional?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+@Transactional is a Spring annotation used to define transaction boundaries declaratively. Instead of manually opening, committing and rolling back transactions in code, you annotate a method (or class) and Spring manages the transaction around it.
+</p>
+
+</div>
+
+<h3>Example</h3>
+
+<pre>
+
+@Transactional
+public void transferMoney() {
+
+}
+
+</pre>
+
+<h3>Behavior</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Begin Transaction</li>
+
+<li>Execute Logic</li>
+
+<li>Commit On Success</li>
+
+<li>Rollback On Failure</li>
+
+</ul>
+
+<p>
+When the annotated method is invoked, Spring begins a transaction, runs the method body, and commits if it returns normally. If a runtime exception propagates out, Spring rolls back. A key default to remember is that Spring rolls back on unchecked (runtime) exceptions and errors, but not on checked exceptions unless you configure rollbackFor explicitly.
+</p>
+
+<p>
+This declarative model keeps the business method focused on logic while the transactional plumbing is applied transparently by a proxy, which leads directly into how it works under the hood.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q41">
+Q41. How Does @Transactional Work Internally?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Flow</h3>
+
+<pre>
+
+Client
+
+↓
+
+Spring Proxy
+
+↓
+
+Transaction Manager
+
+↓
+
+Actual Method
+
+</pre>
+
+<h3>Process</h3>
+
+<div class="answer">
+
+<ol>
+
+<li>Proxy Intercepts Call</li>
+
+<li>Transaction Started</li>
+
+<li>Method Executes</li>
+
+<li>Commit/Rollback</li>
+
+</ol>
+
+<p>
+When a client calls a @Transactional method, the call actually hits a Spring-generated proxy wrapping the bean. The proxy asks the configured PlatformTransactionManager to start (or join) a transaction, then delegates to the real method. After the method returns, the proxy tells the transaction manager to commit; if a rollback-triggering exception escapes, it tells it to roll back instead.
+</p>
+
+<p>
+The transaction manager binds the underlying resource (such as a JDBC connection or JPA EntityManager) to the current thread for the duration, so all data access inside the method participates in the same transaction. Understanding that this is all driven by a proxy is what lets you explain why @Transactional fails in certain situations.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+@Transactional works through Spring AOP proxies. State this explicitly, because it is the single fact that explains the self-invocation problem, why private and final methods are not advised, and why a bean must be Spring-managed for the annotation to have any effect at all.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q42">
+Q42. Why Doesn't @Transactional Work Sometimes?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Common Reasons</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Self Invocation</li>
+
+<li>Private Methods</li>
+
+<li>Final Methods</li>
+
+<li>Checked Exceptions</li>
+
+<li>Bean Not Managed By Spring</li>
+
+</ul>
+
+<p>
+Almost every failure traces back to the proxy mechanism. Self-invocation (one method in a bean calling another method in the same bean) bypasses the proxy, so the annotation is ignored. Private methods cannot be intercepted because the proxy cannot override them, and final methods cannot be overridden by a CGLIB subclass, so neither gets a transaction.
+</p>
+
+<p>
+The other two are about configuration and defaults. If the object was created with new rather than obtained from the container, there is no proxy at all, so @Transactional does nothing. And because Spring does not roll back on checked exceptions by default, a checked exception can silently commit a transaction you expected to roll back — fix it with rollbackFor or by using runtime exceptions.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q43">
+Q43. What Is Self Invocation Problem?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Example</h3>
+
+<pre>
+
+@Service
+public class UserService {
+
+   public void methodA() {
+      methodB();
+   }
+
+   @Transactional
+   public void methodB() {
+
+   }
+
+}
+
+</pre>
+
+<h3>Problem</h3>
+
+<div class="answer">
+
+<p>
+The call never passes through the Spring proxy, so the transaction is not created. When methodA calls methodB directly, it uses the plain this reference of the real object, not the proxy. Because the advice lives on the proxy, an internal call sidesteps it entirely and the @Transactional on methodB has no effect.
+</p>
+
+<p>
+The fix is to make the call cross the proxy boundary. Common solutions are moving methodB into a separate bean that methodA injects and calls, or injecting a self-reference / using AopContext.currentProxy() to invoke through the proxy. The cleanest design is usually to split the transactional method into its own service.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+This is one of the most commonly asked Spring transaction questions. A complete answer not only describes the symptom but explains the cause (internal calls use this and skip the proxy) and offers the standard fix (extract the method to a separate Spring-managed bean).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h16">SECTION 12 - TRANSACTION PROPAGATION</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q44">
+Q44. What Is Transaction Propagation?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Transaction propagation defines how a transactional method behaves when another transaction already exists. In other words, when method B (transactional) is called from method A (already inside a transaction), propagation rules decide whether B joins A's transaction, starts its own, or runs without one.
+</p>
+
+<p>
+This matters whenever transactional service methods call each other, which is common in layered applications. Spring offers several propagation modes (REQUIRED, REQUIRES_NEW, SUPPORTS, MANDATORY, NEVER, NESTED, NOT_SUPPORTED) so you can express exactly how nested transactional boundaries should compose.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q45">
+Q45. REQUIRED Propagation
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Default Mode</h3>
+
+<pre>
+
+Propagation.REQUIRED
+
+</pre>
+
+<h3>Behavior</h3>
+
+<div class="answer">
+
+<p>
+REQUIRED uses the existing transaction if one is already active, and otherwise creates a new one. It is the default and the mode you will use the vast majority of the time.
+</p>
+
+<p>
+Because nested REQUIRED calls all join the same physical transaction, an exception anywhere inside the chain marks the whole transaction for rollback. This is usually the desired behaviour: a group of related operations either all commit together or all roll back together.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q46">
+Q46. REQUIRES_NEW Propagation
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Behavior</h3>
+
+<div class="answer">
+
+<p>
+REQUIRES_NEW always creates a new, independent transaction and suspends the current one for the duration. The inner transaction commits or rolls back on its own, separately from the outer transaction.
+</p>
+
+</div>
+
+<h3>Common Use Case</h3>
+
+<div class="answer">
+
+<p>
+Audit logging is the classic example. You want the audit record to be written even if the surrounding business transaction later rolls back, so you run the audit write in REQUIRES_NEW. That way the log persists independently of the main operation's outcome.
+</p>
+
+<p>
+The trade-off is that suspending and resuming transactions and holding two connections at once has overhead, and the two transactions can deadlock if they touch the same rows. Use REQUIRES_NEW deliberately for genuinely independent units of work.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q47">
+Q47. SUPPORTS Propagation
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium
+</p>
+
+<h3>Behavior</h3>
+
+<div class="answer">
+
+<p>
+SUPPORTS uses the existing transaction if one is present, and otherwise executes without a transaction at all. It does not force a transaction to exist.
+</p>
+
+<p>
+This is appropriate for read operations that can participate in a caller's transaction for consistency when one exists, but do not strictly need transactional guarantees on their own. It is the most "flexible/neutral" propagation mode.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q48">
+Q48. MANDATORY Propagation
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium
+</p>
+
+<h3>Behavior</h3>
+
+<div class="answer">
+
+<p>
+MANDATORY requires that a transaction already exist; it joins the existing one and throws an exception if none is active. It never starts its own transaction.
+</p>
+
+<p>
+This is useful for enforcing a contract: a method marked MANDATORY is declaring that it must only ever be called within an existing transactional context, and calling it standalone is a programming error that fails fast rather than silently running non-transactionally.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q49">
+Q49. NEVER Propagation
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium
+</p>
+
+<h3>Behavior</h3>
+
+<div class="answer">
+
+<p>
+NEVER means the method must run without a transaction, and it throws an exception if a transaction is active. It is the strict opposite of MANDATORY.
+</p>
+
+<p>
+This is used to guard operations that should never participate in a transaction — for example certain non-transactional or external calls where joining a transaction would be incorrect — by failing loudly if one is unexpectedly present.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h17">SECTION 13 - TRANSACTION ISOLATION</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q50">
+Q50. What Is Isolation Level?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+An isolation level defines the visibility rules between concurrent transactions — specifically, how and when the changes made by one transaction become visible to another. It is the practical control over the "Isolation" property of ACID.
+</p>
+
+<p>
+Higher isolation prevents more concurrency anomalies (dirty reads, non-repeatable reads, phantom reads) but reduces throughput because it requires more locking or stricter snapshotting. Choosing an isolation level is therefore a deliberate trade-off between correctness under concurrency and performance, which is why interviewers tie it to the read phenomena below.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q51">
+Q51. Isolation Levels
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+
+<li>READ_UNCOMMITTED</li>
+
+<li>READ_COMMITTED</li>
+
+<li>REPEATABLE_READ</li>
+
+<li>SERIALIZABLE</li>
+
+</ul>
+
+<p>
+These are listed from weakest to strongest. READ_UNCOMMITTED allows reading uncommitted changes (dirty reads). READ_COMMITTED only sees committed data, preventing dirty reads but still allowing non-repeatable reads. REPEATABLE_READ guarantees a row read twice returns the same value, preventing non-repeatable reads, though phantom rows may still appear. SERIALIZABLE is the strictest, making transactions behave as if executed one after another and preventing all three anomalies.
+</p>
+
+<p>
+Each step up the ladder eliminates more anomalies at the cost of concurrency. Most applications run at READ_COMMITTED (the default in many databases such as PostgreSQL), and you only raise the level for specific operations that genuinely need stronger guarantees.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q52">
+Q52. Dirty Read
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A dirty read is reading uncommitted data from another transaction. Transaction B sees a change that transaction A has made but not yet committed, and if A then rolls back, B has acted on data that never actually existed.
+</p>
+
+<p>
+Dirty reads are only possible at the READ_UNCOMMITTED isolation level. Raising the level to READ_COMMITTED prevents them, which is why READ_UNCOMMITTED is almost never used in practice for correctness-sensitive work.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q53">
+Q53. Non-Repeatable Read
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A non-repeatable read occurs when the same row returns different values during the same transaction. Transaction A reads a row, transaction B updates and commits that row, and when A reads it again it sees the changed value, so its two reads disagree.
+</p>
+
+<p>
+This anomaly is prevented by REPEATABLE_READ (and stronger), which guarantees that any row read within a transaction stays consistent for that transaction's duration. READ_COMMITTED still allows it, since it only guarantees you read committed data, not that the data stays stable.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q54">
+Q54. Phantom Read
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A phantom read occurs when new rows appear between repeated queries. Transaction A runs a query matching a set of rows, transaction B inserts a new row matching the same condition and commits, and when A reruns the query it now sees an extra "phantom" row.
+</p>
+
+<p>
+The difference from a non-repeatable read is that phantoms concern the set of rows returned rather than the value of an existing row. Only the SERIALIZABLE isolation level fully prevents phantom reads, which is part of why SERIALIZABLE is the most expensive level.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h18">SECTION 14 - SPRING BEAN CREATION INTERNALS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q55">
+Q55. How Does Spring Create Beans?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Flow</h3>
+
+<pre>
+
+Component Scan
+
+↓
+
+Bean Definition
+
+↓
+
+Bean Creation
+
+↓
+
+Dependency Injection
+
+↓
+
+Post Processing
+
+↓
+
+Ready
+
+</pre>
+
+<div class="answer">
+
+<p>
+First, component scanning discovers candidate classes and Spring records a bean definition for each — metadata describing how to build the bean (its class, scope, dependencies and lifecycle callbacks). Note that no objects are created yet at this stage; these are just blueprints.
+</p>
+
+<p>
+Then, for each definition, the container instantiates the bean, injects its dependencies (resolving the order so dependencies are created first), and runs it through the BeanPostProcessors, which is where things like proxy creation and @PostConstruct invocation happen. Only after post-processing completes is the bean considered fully initialized and ready for use. Separating "definition" from "creation" is exactly what enables features like proxying and conditional configuration.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q56">
+Q56. What Is BeanPostProcessor?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A BeanPostProcessor is an extension point that allows custom processing before and after bean initialization. It exposes two callbacks that the container invokes for every bean, giving framework and application code a hook to inspect, modify, or wrap each bean as it is created.
+</p>
+
+</div>
+
+<h3>Used By</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>AOP</li>
+
+<li>@Autowired</li>
+
+<li>Proxy Creation</li>
+
+</ul>
+
+<p>
+This single mechanism is how a great deal of Spring's "magic" is implemented. AOP and transaction support use a BeanPostProcessor to wrap beans in proxies after initialization; annotation injection (@Autowired, @Value) is driven by post processors that populate fields; and @Repository exception translation is applied the same way.
+</p>
+
+<p>
+Understanding BeanPostProcessor is the key to explaining how cross-cutting behaviour is added to beans without modifying their code, which is why it is a favourite "how does Spring actually work" question for senior roles.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q57">
+Q57. What Is Spring Startup Flow?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Simplified Flow</h3>
+
+<pre>
+
+Start Application
+
+↓
+
+Create ApplicationContext
+
+↓
+
+Scan Components
+
+↓
+
+Create Beans
+
+↓
+
+Inject Dependencies
+
+↓
+
+Create Proxies
+
+↓
+
+Application Ready
+
+</pre>
+
+<div class="answer">
+
+<p>
+On startup Spring bootstraps an ApplicationContext, scans the configured packages to register bean definitions, then instantiates the singleton beans and injects their dependencies. After wiring, BeanPostProcessors run, which is where AOP/transaction proxies are created and lifecycle callbacks like @PostConstruct fire.
+</p>
+
+<p>
+Once every singleton is fully initialized, the context publishes a ready event and the application begins serving requests. A practical takeaway is that eager singleton creation makes Spring fail fast: misconfiguration and wiring errors surface at startup rather than mid-request in production, which is exactly what you want.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h19">SECTION 15 - SENIOR SPRING QUESTIONS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q58">
+Q58. Why Is Spring Popular?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Loose Coupling</li>
+
+<li>Dependency Injection</li>
+
+<li>Rich Ecosystem</li>
+
+<li>Productivity</li>
+
+<li>Enterprise Features</li>
+
+</ul>
+
+<p>
+At a technical level, dependency injection and the resulting loose coupling make Spring applications testable and maintainable, which is the original reason it displaced heavyweight Java EE approaches. On top of that, the ecosystem (Spring Data, Security, Cloud, Boot) covers nearly every need a backend team has, so you rarely have to leave the family of libraries.
+</p>
+
+<p>
+Spring Boot is the productivity multiplier: auto-configuration, starter dependencies and an embedded server let teams stand up production-grade services in minutes instead of days. Combined with mature enterprise features for transactions, security and integration, this is why Spring remains the default choice for Java backends.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q59">
+Q59. Singleton Bean Stores Mutable State. Is It Safe?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Usually unsafe. Because a singleton bean is one shared instance, multiple request threads can modify its instance fields concurrently, which leads to race conditions and data from one user leaking into another's request.
+</p>
+
+</div>
+
+<h3>Recommendation</h3>
+
+<div class="answer">
+
+<p>
+Keep beans stateless whenever possible. Hold per-request data in local variables or method parameters (which are confined to the executing thread's stack) rather than in instance fields, and store any genuinely shared state in the database or a thread-safe structure.
+</p>
+
+<p>
+If mutable state is truly unavoidable in a bean, you must protect it explicitly with synchronization, atomic variables or concurrent collections, or switch the bean to a narrower scope. But in practice, stateless service design is the simplest and safest pattern and is what interviewers expect to hear.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q60">
+Q60. How Would You Design A Thread-Safe Spring Service?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<ul>
+
+<li>Stateless Services</li>
+
+<li>No Shared Mutable State</li>
+
+<li>Use Database For State</li>
+
+<li>Use Concurrent Structures If Needed</li>
+
+</ul>
+
+<p>
+The primary strategy is to make services stateless: keep all per-request data on the stack as local variables and method arguments so that concurrent threads never touch shared fields. A stateless singleton is inherently thread-safe because there is nothing for threads to corrupt.
+</p>
+
+<p>
+When state genuinely must be shared, push it to a system designed for concurrency — the database with proper transactions and isolation, or a distributed cache like Redis — rather than holding it in bean fields. For in-memory shared state that cannot be avoided, use concurrent structures (ConcurrentHashMap, atomic types) or explicit synchronization, but treat that as the exception, not the default.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q61">
+Q61. What Spring Core Questions Are Asked Most?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Reality Check
+</p>
+
+<div class="answer">
+
+<ol>
+
+<li>IoC vs DI</li>
+
+<li>Constructor Injection</li>
+
+<li>Bean Lifecycle</li>
+
+<li>Bean Scopes</li>
+
+<li>@Component vs @Service</li>
+
+<li>ApplicationContext vs BeanFactory</li>
+
+<li>AOP</li>
+
+<li>Proxy Pattern</li>
+
+<li>@Transactional</li>
+
+<li>Self Invocation Problem</li>
+
+</ol>
+
+<p>
+This list is the realistic core of almost every Spring interview at the four-year level. Notice the recurring thread: most of the harder questions (AOP, @Transactional, self-invocation) ultimately reduce to understanding the proxy mechanism, while the rest test whether you understand IoC/DI and the container lifecycle conceptually.
+</p>
+
+<p>
+The practical preparation strategy is to master the "why proxies matter" story and the "keep singletons stateless" story, since those two themes connect the majority of the questions above and let you answer follow-ups confidently rather than reciting definitions.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h20">SPRING CORE FILE COMPLETE</h1>
+
+<h2>Topics Covered</h2>
+
+<ul>
+
+<li>Spring Fundamentals</li>
+<li>IoC</li>
+<li>Dependency Injection</li>
+<li>Bean Lifecycle</li>
+<li>Bean Scopes</li>
+<li>Stereotype Annotations</li>
+<li>ApplicationContext</li>
+<li>BeanFactory</li>
+<li>Circular Dependencies</li>
+<li>AOP</li>
+<li>Proxies</li>
+<li>@Transactional</li>
+<li>Propagation</li>
+<li>Isolation Levels</li>
+<li>Spring Internals</li>
+<li>BeanPostProcessor</li>
+<li>Spring Startup Flow</li>
+
+</ul>
+
+</body>
+</html>

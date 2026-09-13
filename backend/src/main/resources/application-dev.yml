@@ -1,0 +1,21 @@
+# Local dev profile — file-based H2, no MySQL install required. File-based (not mem:) so data
+# survives a restart — otherwise a dev-seeded admin user (AdminSeeder) never actually gets found,
+# since it only runs at startup and an in-memory DB is wiped clean by every restart.
+# Run with: mvn spring-boot:run -Dspring-boot.run.profiles=dev
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/mockinterview-dev;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.H2Dialect
+  # H2 maps @Lob String fields to its native CLOB type (unlike MySQL, which has no CLOB keyword).
+  flyway:
+    placeholders:
+      clob_type: CLOB

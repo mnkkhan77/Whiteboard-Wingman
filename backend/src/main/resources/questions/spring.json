@@ -1,0 +1,17 @@
+[
+  {"id": "sp-e1", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is dependency injection, and how does Spring implement it?"},
+  {"id": "sp-e2", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is the difference between @Component, @Service, and @Repository annotations?"},
+  {"id": "sp-e3", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is the default scope of a Spring bean, and what other scopes are available?"},
+  {"id": "sp-mcq1", "difficulty": "EASY", "questionType": "MCQ", "promptText": "Which annotation marks a class as a Spring-managed REST controller returning JSON/XML directly from methods?",
+    "options": ["@Controller", "@RestController", "@Service", "@Repository"], "correctOptionIndex": 1,
+    "explanation": "@RestController combines @Controller and @ResponseBody, so return values are serialized directly to the response body."},
+  {"id": "sp-m1", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "Explain how Spring Boot auto-configuration works, and how it decides which beans to create."},
+  {"id": "sp-m2", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "What is the difference between @Transactional propagation levels REQUIRED and REQUIRES_NEW?"},
+  {"id": "sp-m3", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "How does Spring Security's filter chain work, and where would a custom JWT filter fit into it?"},
+  {"id": "sp-mcq2", "difficulty": "MEDIUM", "questionType": "MCQ", "promptText": "By default, what is the scope of a Spring bean?",
+    "options": ["prototype", "singleton", "request", "session"], "correctOptionIndex": 1,
+    "explanation": "Spring beans are singleton-scoped by default — one shared instance per Spring container, unless a different scope is explicitly declared."},
+  {"id": "sp-h1", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "Explain how Spring resolves circular dependencies between beans, and under what conditions it cannot."},
+  {"id": "sp-h2", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "How does Spring's AOP proxying work under the hood, and why do self-invoked calls to a @Transactional method within the same class not trigger the transaction?"},
+  {"id": "sp-h3", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "Design the request flow for a Spring Boot API that must call an external LLM provider using a per-request API key supplied by the caller, without ever persisting that key server-side. What components would you introduce and why?"}
+]

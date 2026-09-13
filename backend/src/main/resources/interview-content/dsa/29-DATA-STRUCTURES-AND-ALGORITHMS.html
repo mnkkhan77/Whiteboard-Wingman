@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17-DATA-STRUCTURES-AND-ALGORITHMS.html</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    line-height:1.7;
+    margin:40px;
+    background:#f4f6f8;
+    color:#222;
+}
+h1,h2,h3,h4{
+    color:#1f4e79;
+}
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:8px;
+    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+}
+.question{
+    color:#c0392b;
+    font-weight:bold;
+    font-size:20px;
+}
+.answer{
+    margin-top:10px;
+}
+.roi{
+    color:green;
+    font-weight:bold;
+}
+.followup{
+    background:#fff8dc;
+    padding:10px;
+    border-left:4px solid orange;
+    margin-top:10px;
+}
+pre{
+    background:#f4f4f4;
+    padding:10px;
+    border-radius:4px;
+    overflow:auto;
+}
+table{
+    border-collapse:collapse;
+    margin:10px 0;
+}
+th,td{
+    border:1px solid #ccc;
+    padding:6px 10px;
+    text-align:left;
+}
+th{
+    background:#1f4e79;
+    color:white;
+}
+</style>
+</head>
+<body>
+
+<h1 id="h1">29 - DATA STRUCTURES &amp; ALGORITHMS INTERVIEW HANDBOOK</h1>
+
+<p>
+
+Almost every Senior Software Engineer interview includes a live coding round, and this is where strong backend candidates often slip &mdash; they know Spring and microservices cold but freeze on a graph or dynamic-programming problem.
+
+This chapter is a learning-and-revision resource, not a primer. It is organised by <b>pattern</b>, because interview problems are variations on a small number of recurring patterns. Recognising the pattern is 80% of solving the problem.
+
+What interviewers actually evaluate:
+
+* Can you identify the right pattern and data structure quickly?
+* Can you write correct, compiling Java under mild pressure?
+* Can you state and justify time AND space complexity?
+* Do you handle edge cases (empty input, one element, duplicates, overflow)?
+* Do you think out loud and test your own solution?
+
+How to use this chapter: for each pattern, learn the <i>trigger</i> (what problem statement signals it), the <i>template</i> (the reusable code shape), and the <i>complexity</i>. The single most repeated piece of advice: state your approach and complexity out loud BEFORE you type.
+
+</p>
+
+<hr>
+
+<h1 id="h2">TOP ROI DSA TOPICS</h1>
+
+<ol>
+
+<li>Complexity analysis (Big O, recursion, amortized)</li>
+
+<li>Arrays &amp; strings: two-pointer, sliding window, prefix sum, Kadane</li>
+
+<li>Hashing: frequency maps, grouping, LRU cache</li>
+
+<li>Linked lists: reverse, fast/slow, merge</li>
+
+<li>Stacks &amp; queues: monotonic stack, min stack</li>
+
+<li>Trees &amp; BST: traversals, validation, LCA, depth</li>
+
+<li>Heaps / PriorityQueue: top-K, merge-K, kth largest</li>
+
+<li>Graphs: BFS/DFS, islands, topological sort, Dijkstra, union-find</li>
+
+<li>Recursion &amp; backtracking: subsets, permutations</li>
+
+<li>Dynamic programming: knapsack, coin change, LCS, 1D DP</li>
+
+<li>Searching &amp; sorting: binary search variants</li>
+
+<li>Greedy &amp; bit manipulation</li>
+
+<li>Java Collections cheat sheet for DSA</li>
+
+</ol>
+
+<hr>
+
+<h1 id="h3">SECTION 1 - COMPLEXITY ANALYSIS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q1">
+Q1. What Is Big O Notation?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<p>
+Big O describes how an algorithm's running time (or memory) <b>grows as the input grows</b>, ignoring constants and lower-order terms. It is the <i>worst-case</i> upper bound, which is what interviewers usually mean by "complexity".
+</p>
+
+<p>
+The point is hardware-independent comparison. An O(n) algorithm beats an O(n&sup2;) one for large n no matter the machine, because we care about the <i>shape</i> of growth, not exact milliseconds. Related notation: &Theta; (tight bound) and &Omega; (lower bound), but Big O dominates interviews.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Always state <b>both time and space</b>. A common follow-up after a fast solution is "can you do it in O(1) extra space?" &mdash; which asks you to trade a HashMap for an in-place technique like two pointers.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q2">
+Q2. How Do You Analyse the Complexity of Loops?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Single loop over n &rarr; <b>O(n)</b></li>
+<li>Nested loops, both over n &rarr; <b>O(n&sup2;)</b> (loops <i>multiply</i>)</li>
+<li>Two separate (non-nested) loops &rarr; <b>O(n)</b> (loops <i>add</i>)</li>
+<li>Range halves each step &rarr; <b>O(log n)</b></li>
+<li>Loop runs n times, doing O(log n) work each &rarr; <b>O(n log n)</b></li>
+</ul>
+
+</div>
+
+<pre>
+for (int i = 0; i &lt; n; i++)          // O(n)
+    for (int j = i+1; j &lt; n; j++)     // still O(n^2): ~n^2/2 pairs, constants dropped
+        check(a[i], a[j]);
+</pre>
+
+<div class="followup">
+
+<h3>Common Mistake</h3>
+
+<p>
+Sequential loops are <b>added</b> (O(n)+O(n)=O(n)); only nested loops multiply. And a loop from <code>i</code> to <code>n</code> nested in one from 0 to <code>n</code> is still O(n&sup2;) &mdash; halving the work drops the constant, not the class.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q3">
+Q3. What Are the Common Complexity Classes?
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<table border="1">
+
+<tr><th>Complexity</th><th>Name</th><th>Example</th></tr>
+<tr><td>O(1)</td><td>Constant</td><td>HashMap get, array index</td></tr>
+<tr><td>O(log n)</td><td>Logarithmic</td><td>Binary search, balanced BST</td></tr>
+<tr><td>O(n)</td><td>Linear</td><td>Single scan</td></tr>
+<tr><td>O(n log n)</td><td>Linearithmic</td><td>Merge/quick sort, heap-based</td></tr>
+<tr><td>O(n&sup2;)</td><td>Quadratic</td><td>Nested loops, bubble sort</td></tr>
+<tr><td>O(2&#8319;)</td><td>Exponential</td><td>Naive recursion, subsets</td></tr>
+<tr><td>O(n!)</td><td>Factorial</td><td>Permutations, brute-force TSP</td></tr>
+
+</table>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+O(n log n) is the best possible for general comparison-based sorting. If you claim faster, the interviewer expects a non-comparison sort (counting/radix) with constraints on the input range.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q4">
+Q4. How Do You Analyse the Complexity of a Recursive Algorithm?
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Write a recurrence: how many recursive calls, and how much work per call. Then evaluate it &mdash; either with the recursion-tree intuition or the Master Theorem for divide-and-conquer T(n) = a&middot;T(n/b) + O(n&#7472;).
+</p>
+
+<ul>
+<li>Merge sort: T(n) = 2T(n/2) + O(n) &rarr; <b>O(n log n)</b> (n work per level &times; log n levels)</li>
+<li>Binary search: T(n) = T(n/2) + O(1) &rarr; <b>O(log n)</b></li>
+<li>Naive Fibonacci: T(n) = T(n-1) + T(n-2) &rarr; <b>O(2&#8319;)</b> (branching tree)</li>
+</ul>
+
+<p>
+Don't forget the <b>call-stack space</b>: recursion depth d costs O(d) space. Balanced recursion (merge sort) is O(log n) stack; linear recursion is O(n) stack and can overflow.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+The recursion-tree picture is usually enough: "n work at each of log n levels = n log n". You rarely need the formal Master Theorem, but naming it signals depth.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q5">
+Q5. What Is Amortized Complexity?
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+Amortized complexity is the <i>average</i> cost per operation over a sequence, even when individual operations occasionally spike. The classic example is <code>ArrayList.add</code>: usually O(1), but when the backing array fills it copies everything to a larger array (O(n)). Because resizing happens rarely and doubles capacity, the cost spread across all adds is <b>amortized O(1)</b>.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+"Amortized O(1)" is not the same as "always O(1)" &mdash; a single add can be O(n). HashMap operations are also amortized O(1): occasional rehashing is the spike. Knowing the distinction is a senior signal.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h4">SECTION 2 - ARRAYS &amp; STRINGS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q6">
+Q6. Two Sum &mdash; the Hashing Pattern
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<p>
+Naive is O(n&sup2;). The optimal uses a HashMap to remember seen values: for each number ask "have I seen <code>target - current</code>?" &mdash; O(1) per element.
+</p>
+
+</div>
+
+<pre>
+int[] twoSum(int[] nums, int target) {
+    Map&lt;Integer,Integer&gt; seen = new HashMap&lt;&gt;();
+    for (int i = 0; i &lt; nums.length; i++) {
+        int need = target - nums[i];
+        if (seen.containsKey(need)) return new int[]{seen.get(need), i};
+        seen.put(nums[i], i);
+    }
+    return new int[]{-1,-1};
+}
+// Time O(n), Space O(n)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+This "remember what you've seen in a map" idea collapses a huge family of O(n&sup2;) brute forces to O(n): subarray sums, anagrams, duplicates, first unique. When you see nested loops searching for a complementary value, reach for a map.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q7">
+Q7. The Two-Pointer Technique
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+Two indices move through the array &mdash; from both ends, or at different speeds &mdash; replacing a nested loop with one pass. The canonical use is a pair summing to a target in a <b>sorted</b> array.
+</p>
+
+</div>
+
+<pre>
+boolean hasPair(int[] sorted, int target) {
+    int lo = 0, hi = sorted.length - 1;
+    while (lo &lt; hi) {
+        int sum = sorted[lo] + sorted[hi];
+        if (sum == target) return true;
+        if (sum &lt; target) lo++; else hi--;
+    }
+    return false;
+}
+// Time O(n), Space O(1)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Triggers: "sorted array", "pair/triplet", "in place", "remove duplicates", "reverse", "palindrome", "merge two sorted arrays". The 3Sum problem is just "fix one element, then two-pointer the rest".
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q8">
+Q8. Sliding Window &mdash; Longest Substring Without Repeating Characters
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+A window [left, right] expands and shrinks instead of recomputing from scratch, turning O(n&sup2;) substring/subarray problems into O(n).
+</p>
+
+</div>
+
+<pre>
+int longestUnique(String s) {
+    Set&lt;Character&gt; window = new HashSet&lt;&gt;();
+    int left = 0, best = 0;
+    for (int right = 0; right &lt; s.length(); right++) {
+        while (window.contains(s.charAt(right)))
+            window.remove(s.charAt(left++));     // shrink
+        window.add(s.charAt(right));             // expand
+        best = Math.max(best, right - left + 1);
+    }
+    return best;
+}
+// Time O(n), Space O(k) distinct chars
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Trigger words: "longest/shortest/maximum/minimum <b>contiguous</b> subarray or substring", "at most K distinct", "window". Fixed-size windows (max sum of k elements) just slide without the inner shrink loop.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q9">
+Q9. Maximum Subarray Sum (Kadane's Algorithm)
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Find the contiguous subarray with the largest sum. Kadane's insight: at each element, either extend the previous best-ending-here or start fresh at the current element.
+</p>
+
+</div>
+
+<pre>
+int maxSubArray(int[] nums) {
+    int best = nums[0], cur = nums[0];
+    for (int i = 1; i &lt; nums.length; i++) {
+        cur = Math.max(nums[i], cur + nums[i]);  // extend or restart
+        best = Math.max(best, cur);
+    }
+    return best;
+}
+// Time O(n), Space O(1)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Kadane's is a 1D dynamic-programming problem in disguise: <code>cur</code> is "best sum ending at i". The restart-vs-extend decision is the recurrence. Handle the all-negative case &mdash; initialising to <code>nums[0]</code> (not 0) covers it.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q10">
+Q10. Prefix Sums &mdash; Subarray Sum Equals K
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+A prefix sum lets you compute any subarray sum in O(1). Combined with a HashMap of seen prefix sums, you count subarrays summing to k in one pass: if <code>prefix - k</code> was seen before, those starting points form valid subarrays.
+</p>
+
+</div>
+
+<pre>
+int subarraySum(int[] nums, int k) {
+    Map&lt;Integer,Integer&gt; counts = new HashMap&lt;&gt;();
+    counts.put(0, 1);                 // empty prefix
+    int prefix = 0, result = 0;
+    for (int n : nums) {
+        prefix += n;
+        result += counts.getOrDefault(prefix - k, 0);
+        counts.merge(prefix, 1, Integer::sum);
+    }
+    return result;
+}
+// Time O(n), Space O(n)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Prefix sums shine for repeated range-sum queries (precompute once, answer each in O(1)). The HashMap-of-prefixes trick generalises to "count/length of subarrays with sum/property X".
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q11">
+Q11. Merge Overlapping Intervals
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Sort by start, then sweep: if the current interval overlaps the last merged one (its start &le; last end), extend the end; otherwise append a new interval. Sorting dominates at O(n log n).
+</p>
+
+</div>
+
+<pre>
+int[][] merge(int[][] intervals) {
+    Arrays.sort(intervals, (a, b) -&gt; Integer.compare(a[0], b[0]));
+    List&lt;int[]&gt; out = new ArrayList&lt;&gt;();
+    for (int[] iv : intervals) {
+        if (!out.isEmpty() && iv[0] &lt;= out.get(out.size()-1)[1])
+            out.get(out.size()-1)[1] = Math.max(out.get(out.size()-1)[1], iv[1]);
+        else
+            out.add(iv);
+    }
+    return out.toArray(new int[0][]);
+}
+// Time O(n log n), Space O(n)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+"Intervals" almost always means "sort first, then sweep". The same shape solves meeting-rooms, insert-interval, and interval intersection problems.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q12">
+Q12. Sort Colors / Dutch National Flag (Three-Way Partition)
+</div>
+
+<p class="roi">
+ROI: ★★★☆☆
+Frequency: Medium
+</p>
+
+<div class="answer">
+
+<p>
+Sort an array of three values (0,1,2) in a single O(n) pass with three pointers: <code>low</code>, <code>mid</code>, <code>high</code>. It's the partition step behind 3-way quicksort.
+</p>
+
+</div>
+
+<pre>
+void sortColors(int[] a) {
+    int low = 0, mid = 0, high = a.length - 1;
+    while (mid &lt;= high) {
+        if (a[mid] == 0)      swap(a, low++, mid++);
+        else if (a[mid] == 1) mid++;
+        else                  swap(a, mid, high--);  // 2: don't advance mid
+    }
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+The subtlety: after swapping with <code>high</code> you do <i>not</i> advance <code>mid</code>, because the value swapped in is unexamined. Getting that right is the whole question.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q13">
+Q13. Valid Anagram &amp; Group Anagrams
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Two strings are anagrams if their character counts match. Compare via a frequency array (O(n)) or by sorting both (O(n log n)). To <b>group</b> anagrams, use the sorted string as a HashMap key.
+</p>
+
+</div>
+
+<pre>
+List&lt;List&lt;String&gt;&gt; groupAnagrams(String[] words) {
+    Map&lt;String, List&lt;String&gt;&gt; groups = new HashMap&lt;&gt;();
+    for (String w : words) {
+        char[] c = w.toCharArray();
+        Arrays.sort(c);
+        groups.computeIfAbsent(new String(c), k -&gt; new ArrayList&lt;&gt;()).add(w);
+    }
+    return new ArrayList&lt;&gt;(groups.values());
+}
+// Time O(n &middot; k log k), Space O(n &middot; k)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+For lowercase-only input, a 26-length count array (turned into a key string) beats sorting and drops the per-word factor to O(k). Mentioning that optimisation is a strong signal.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h5">SECTION 3 - HASHING &amp; DESIGN</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q14">
+Q14. When Do You Reach for a HashMap or HashSet?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+Use a <b>HashSet</b> for O(1) membership/de-duplication ("have I seen this?"). Use a <b>HashMap</b> for O(1) lookup of an associated value or a count ("how many times?", "what index?"). This converts countless O(n&sup2;) brute forces into O(n).
+</p>
+
+<p>
+Frequency counting is the most common sub-pattern: <code>map.merge(key, 1, Integer::sum)</code> or <code>map.getOrDefault(key, 0) + 1</code>.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Remember the cost of a custom key: your object needs correct <code>equals()</code> and <code>hashCode()</code> or the map breaks. Tie this back to the Collections chapter &mdash; this is exactly why those methods must agree.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q15">
+Q15. First Non-Repeating Character
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+Two passes: count frequencies, then scan again for the first character with count 1. A <code>LinkedHashMap</code> preserves insertion order so you can do it in one logical pass over the keys.
+</p>
+
+</div>
+
+<pre>
+int firstUniqChar(String s) {
+    int[] count = new int[26];
+    for (char c : s.toCharArray()) count[c - 'a']++;
+    for (int i = 0; i &lt; s.length(); i++)
+        if (count[s.charAt(i) - 'a'] == 1) return i;
+    return -1;
+}
+// Time O(n), Space O(1) (fixed 26)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+A fixed-size count array is O(1) space and faster than a HashMap when the alphabet is bounded (ASCII/lowercase). Use a HashMap only when the key space is large or unknown.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q16">
+Q16. Design an LRU Cache
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+An LRU (Least Recently Used) cache evicts the oldest-touched entry when full. The interview-grade solution combines a <b>HashMap</b> (O(1) lookup) with a <b>doubly linked list</b> (O(1) move-to-front and remove-from-tail). In Java you can lean on <code>LinkedHashMap</code> with access-order:
+</p>
+
+</div>
+
+<pre>
+class LRUCache&lt;K,V&gt; extends LinkedHashMap&lt;K,V&gt; {
+    private final int capacity;
+    LRUCache(int capacity) {
+        super(capacity, 0.75f, true);   // true = access-order
+        this.capacity = capacity;
+    }
+    @Override protected boolean removeEldestEntry(Map.Entry&lt;K,V&gt; eldest) {
+        return size() &gt; capacity;       // auto-evict oldest
+    }
+}
+// get/put are O(1)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Know <i>both</i> answers: the from-scratch HashMap + doubly-linked-list (interviewers often forbid LinkedHashMap to test fundamentals) and the production <code>LinkedHashMap</code> shortcut. Caffeine/Guava caches generalise this with TTL and size-based eviction &mdash; tie to the caching content in your System Design chapter.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h6">SECTION 4 - LINKED LISTS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q17">
+Q17. Reverse a Singly Linked List
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+Walk once, re-pointing each node's <code>next</code> to the previous node, tracking three references.
+</p>
+
+</div>
+
+<pre>
+Node reverse(Node head) {
+    Node prev = null, curr = head;
+    while (curr != null) {
+        Node next = curr.next;  // save before overwriting
+        curr.next = prev;       // reverse the link
+        prev = curr;            // advance
+        curr = next;
+    }
+    return prev;                // new head
+}
+// Time O(n), Space O(1)
+</pre>
+
+<div class="followup">
+
+<h3>Common Mistake</h3>
+
+<p>
+Forgetting to save <code>curr.next</code> before reassigning loses the rest of the list. The recursive version is elegant but O(n) stack space &mdash; mention the iterative O(1)-space version is preferred.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q18">
+Q18. Fast &amp; Slow Pointers &mdash; Cycle Detection and Middle Node
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Floyd's two-speed pointers solve a family of list problems in O(1) space. <b>Cycle:</b> if fast (2 steps) ever meets slow (1 step), there's a loop. <b>Middle:</b> when fast reaches the end, slow is at the midpoint.
+</p>
+
+</div>
+
+<pre>
+boolean hasCycle(Node head) {
+    Node slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next; fast = fast.next.next;
+        if (slow == fast) return true;
+    }
+    return false;
+}
+
+Node middle(Node head) {
+    Node slow = head, fast = head;
+    while (fast != null && fast.next != null) { slow = slow.next; fast = fast.next.next; }
+    return slow;
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+To find the cycle's <b>start</b>: after the meeting point, reset one pointer to head and advance both one step at a time &mdash; they meet at the cycle entry (Floyd's second phase).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q19">
+Q19. Merge Two Sorted Linked Lists
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Use a dummy head node to simplify edge cases, then splice the smaller current node each step.
+</p>
+
+</div>
+
+<pre>
+Node mergeTwo(Node a, Node b) {
+    Node dummy = new Node(0), tail = dummy;
+    while (a != null && b != null) {
+        if (a.val &lt;= b.val) { tail.next = a; a = a.next; }
+        else                { tail.next = b; b = b.next; }
+        tail = tail.next;
+    }
+    tail.next = (a != null) ? a : b;   // attach the remainder
+    return dummy.next;
+}
+// Time O(n+m), Space O(1)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+The <b>dummy node</b> trick removes special-casing for the head and is worth using in almost every linked-list build problem. Merging is also the core of merge sort and "merge K lists" (heap version below).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q20">
+Q20. Remove the Nth Node From the End
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+One pass with a gap: advance a <code>fast</code> pointer n nodes ahead, then move <code>fast</code> and <code>slow</code> together until fast hits the end &mdash; slow now sits just before the target.
+</p>
+
+</div>
+
+<pre>
+Node removeNthFromEnd(Node head, int n) {
+    Node dummy = new Node(0); dummy.next = head;
+    Node fast = dummy, slow = dummy;
+    for (int i = 0; i &lt; n; i++) fast = fast.next;   // create the gap
+    while (fast.next != null) { fast = fast.next; slow = slow.next; }
+    slow.next = slow.next.next;                      // unlink
+    return dummy.next;
+}
+// Time O(n), Space O(1)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+The "two pointers with a fixed gap" idea generalises to any "kth from end" question without a length pre-pass. The dummy node handles the edge case of removing the head itself.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h7">SECTION 5 - STACKS &amp; QUEUES</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q21">
+Q21. Valid Parentheses &mdash; Why a Stack?
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Bracket matching is "last opened, first closed" &mdash; LIFO, exactly a stack. Push openers; on a closer, the top must be its matching opener.
+</p>
+
+</div>
+
+<pre>
+boolean isValid(String s) {
+    Deque&lt;Character&gt; stack = new ArrayDeque&lt;&gt;();
+    Map&lt;Character,Character&gt; pairs = Map.of(')','(', ']','[', '}','{');
+    for (char c : s.toCharArray()) {
+        if (pairs.containsValue(c)) stack.push(c);
+        else if (stack.isEmpty() || stack.pop() != pairs.get(c)) return false;
+    }
+    return stack.isEmpty();
+}
+// Time O(n), Space O(n)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Use <code>ArrayDeque</code>, not the legacy <code>Stack</code> class (which extends <code>Vector</code> and is synchronised/slower). <code>ArrayDeque</code> is the modern stack and queue in Java.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q22">
+Q22. Min Stack &mdash; O(1) getMin()
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+Support push/pop/top and retrieving the minimum, all in O(1). Keep a second stack that tracks the minimum at each level (or store pairs of value + min-so-far).
+</p>
+
+</div>
+
+<pre>
+class MinStack {
+    private Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+    private Deque&lt;Integer&gt; mins  = new ArrayDeque&lt;&gt;();
+    void push(int x) {
+        stack.push(x);
+        mins.push(mins.isEmpty() ? x : Math.min(x, mins.peek()));
+    }
+    void pop()      { stack.pop(); mins.pop(); }
+    int top()       { return stack.peek(); }
+    int getMin()    { return mins.peek(); }
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+The key realisation: you can't search for the min in O(1), so you must <i>maintain</i> it as you go. Carrying auxiliary state alongside the main structure is a reusable trick (also used in monotonic stacks below).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q23">
+Q23. Monotonic Stack &mdash; Next Greater Element
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+A monotonic stack keeps elements in increasing or decreasing order, solving "next greater/smaller element" in O(n) instead of O(n&sup2;). Pop everything smaller than the current value &mdash; the current value is their "next greater".
+</p>
+
+</div>
+
+<pre>
+int[] nextGreater(int[] nums) {
+    int[] res = new int[nums.length];
+    Arrays.fill(res, -1);
+    Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();   // holds indices
+    for (int i = 0; i &lt; nums.length; i++) {
+        while (!stack.isEmpty() && nums[i] &gt; nums[stack.peek()])
+            res[stack.pop()] = nums[i];
+        stack.push(i);
+    }
+    return res;
+}
+// Time O(n), Space O(n)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Monotonic stacks power "next greater/smaller", "daily temperatures", "largest rectangle in histogram", and "trapping rain water". Each element is pushed and popped at most once &rarr; O(n) despite the inner while loop.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q24">
+Q24. Implement a Queue Using Two Stacks
+</div>
+
+<p class="roi">
+ROI: ★★★☆☆
+Frequency: Medium
+</p>
+
+<div class="answer">
+
+<p>
+Use an <code>in</code> stack for pushes and an <code>out</code> stack for pops. When <code>out</code> is empty, pour <code>in</code> into it (reversing order &rarr; FIFO). Each element moves at most once, so dequeue is amortized O(1).
+</p>
+
+</div>
+
+<pre>
+class MyQueue {
+    private Deque&lt;Integer&gt; in = new ArrayDeque&lt;&gt;(), out = new ArrayDeque&lt;&gt;();
+    void push(int x) { in.push(x); }
+    int pop() {
+        if (out.isEmpty()) while (!in.isEmpty()) out.push(in.pop());
+        return out.pop();
+    }
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+This is a classic "amortized analysis" question: a single pop can be O(n) (when pouring), but across all operations each element is moved once, giving amortized O(1).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h8">SECTION 6 - TREES &amp; BINARY SEARCH TREES</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q25">
+Q25. Tree Traversals &mdash; DFS (Pre/In/Post) and BFS
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+<b>DFS</b> (recursion or explicit stack) has three orders: <b>pre-order</b> (node, left, right), <b>in-order</b> (left, node, right), <b>post-order</b> (left, right, node). <b>BFS</b> / level-order uses a <b>queue</b>.
+</p>
+
+</div>
+
+<pre>
+// In-order DFS (recursive)
+void inorder(Node n, List&lt;Integer&gt; out) {
+    if (n == null) return;
+    inorder(n.left, out); out.add(n.val); inorder(n.right, out);
+}
+
+// BFS level-order
+List&lt;List&lt;Integer&gt;&gt; levelOrder(Node root) {
+    List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+    if (root == null) return res;
+    Queue&lt;Node&gt; q = new LinkedList&lt;&gt;(); q.add(root);
+    while (!q.isEmpty()) {
+        int size = q.size();
+        List&lt;Integer&gt; level = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; size; i++) {
+            Node n = q.poll(); level.add(n.val);
+            if (n.left != null)  q.add(n.left);
+            if (n.right != null) q.add(n.right);
+        }
+        res.add(level);
+    }
+    return res;
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+<b>In-order traversal of a BST yields sorted values</b> &mdash; this single fact answers "validate BST", "kth smallest", and "two sum in BST". The level-size loop in BFS is the standard way to process the tree level by level.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q26">
+Q26. Maximum Depth and Diameter of a Binary Tree
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Depth is a clean post-order recursion: 1 + max(left depth, right depth). Diameter (longest path between any two nodes) reuses depth &mdash; at each node the path through it is leftDepth + rightDepth.
+</p>
+
+</div>
+
+<pre>
+int maxDepth(Node n) {
+    return n == null ? 0 : 1 + Math.max(maxDepth(n.left), maxDepth(n.right));
+}
+
+int diameter = 0;
+int depth(Node n) {
+    if (n == null) return 0;
+    int l = depth(n.left), r = depth(n.right);
+    diameter = Math.max(diameter, l + r);   // path through this node
+    return 1 + Math.max(l, r);
+}
+// Both O(n) time, O(h) stack
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Many tree problems are "compute something bottom-up and update a global best along the way" &mdash; diameter, max path sum, and balanced-tree checks all share this shape.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q27">
+Q27. Validate a Binary Search Tree
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+The common bug is only comparing a node with its direct children. A BST requires every node be within a valid <b>(min, max) range</b> inherited from ancestors &mdash; thread the bounds down the recursion.
+</p>
+
+</div>
+
+<pre>
+boolean isValid(Node n, long min, long max) {
+    if (n == null) return true;
+    if (n.val &lt;= min || n.val &gt;= max) return false;
+    return isValid(n.left, min, n.val) && isValid(n.right, n.val, max);
+}
+// call: isValid(root, Long.MIN_VALUE, Long.MAX_VALUE)
+// Time O(n), Space O(h)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Alternative: an in-order traversal of a valid BST is strictly increasing &mdash; track the previous value and fail if it ever doesn't increase. Use <code>long</code> bounds to avoid overflow when node values hit <code>Integer.MIN/MAX_VALUE</code>.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q28">
+Q28. Lowest Common Ancestor (LCA)
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+In a general binary tree, recurse: if a node <i>is</i> p or q, return it; otherwise recurse both sides. If both sides return non-null, this node is the LCA. In a <b>BST</b> it's simpler &mdash; walk down, going left/right until p and q split.
+</p>
+
+</div>
+
+<pre>
+// BST version - O(h)
+Node lcaBST(Node root, Node p, Node q) {
+    while (root != null) {
+        if (p.val &lt; root.val && q.val &lt; root.val) root = root.left;
+        else if (p.val &gt; root.val && q.val &gt; root.val) root = root.right;
+        else return root;     // split point = LCA
+    }
+    return null;
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Always ask "is it a BST?" first &mdash; the BST property turns an O(n) general-tree recursion into a simple O(h) walk. Recognising when extra structure simplifies the problem is a senior skill.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q29">
+Q29. BST Search and Insert
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+A BST gives O(h) search/insert &mdash; O(log n) when balanced, O(n) when degenerate (inserting sorted data builds a linked list). At each node, go left if smaller, right if larger.
+</p>
+
+</div>
+
+<pre>
+Node insert(Node root, int val) {
+    if (root == null) return new Node(val);
+    if (val &lt; root.val) root.left  = insert(root.left, val);
+    else                root.right = insert(root.right, val);
+    return root;
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+This is exactly why self-balancing trees exist: Java's <code>TreeMap</code>/<code>TreeSet</code> are <b>Red-Black trees</b> that guarantee O(log n) by rebalancing on insert/delete, avoiding the degenerate case. Reach for them when you need sorted keys with log-time operations.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h9">SECTION 7 - HEAPS / PRIORITY QUEUE</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q30">
+Q30. What Is a Heap and When Do You Use a PriorityQueue?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+A heap is a tree giving O(1) access to the min (or max) and O(log n) insert/remove. Java's <code>PriorityQueue</code> is a binary min-heap by default. Use it whenever you repeatedly need the smallest/largest of a changing set &mdash; "top K", "kth largest", "merge K", scheduling, Dijkstra.
+</p>
+
+</div>
+
+<pre>
+PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+PriorityQueue&lt;Integer&gt; maxHeap = new PriorityQueue&lt;&gt;(Comparator.reverseOrder());
+minHeap.offer(5); minHeap.offer(1); minHeap.peek(); // 1, O(1)
+minHeap.poll();                                      // remove min, O(log n)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Heap vs sorting: if you only need the K best, a size-K heap is O(n log K), beating a full O(n log n) sort. "Top K / Kth" in the problem statement is the heap trigger.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q31">
+Q31. Kth Largest Element &amp; Top K Frequent
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+For the kth largest, keep a <b>min-heap of size k</b>: the heap's top is the kth largest once you've processed everything. For top-K-frequent, count with a HashMap, then heap by frequency.
+</p>
+
+</div>
+
+<pre>
+int findKthLargest(int[] nums, int k) {
+    PriorityQueue&lt;Integer&gt; heap = new PriorityQueue&lt;&gt;();  // min-heap
+    for (int n : nums) {
+        heap.offer(n);
+        if (heap.size() &gt; k) heap.poll();   // drop smallest
+    }
+    return heap.peek();                     // kth largest
+}
+// Time O(n log k), Space O(k)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Counter-intuitive but key: to find the kth <b>largest</b>, use a <b>min</b>-heap of size k (so the smallest of the top-k sits on top, ready to be evicted). Quickselect gives an average O(n) alternative if asked to optimise further.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q32">
+Q32. Merge K Sorted Lists
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Put the head of each list into a min-heap, then repeatedly poll the smallest and push its successor. This is O(N log k) where N is total nodes and k is the number of lists &mdash; far better than concatenate-and-sort.
+</p>
+
+</div>
+
+<pre>
+Node mergeKLists(Node[] lists) {
+    PriorityQueue&lt;Node&gt; pq = new PriorityQueue&lt;&gt;((a,b) -&gt; a.val - b.val);
+    for (Node l : lists) if (l != null) pq.offer(l);
+    Node dummy = new Node(0), tail = dummy;
+    while (!pq.isEmpty()) {
+        Node n = pq.poll();
+        tail.next = n; tail = n;
+        if (n.next != null) pq.offer(n.next);
+    }
+    return dummy.next;
+}
+// Time O(N log k), Space O(k)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+The heap holds only k nodes at a time (one per list), so space is O(k), not O(N). This same "k-way merge with a heap" powers external merge sort for data too big for memory.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h10">SECTION 8 - GRAPHS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q33">
+Q33. How Do You Represent a Graph?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Two standard representations:
+</p>
+
+<ul>
+<li><b>Adjacency list</b> &mdash; <code>Map&lt;Node, List&lt;Node&gt;&gt;</code> or array of lists. Space O(V+E), efficient for sparse graphs (most real graphs). The default choice.</li>
+<li><b>Adjacency matrix</b> &mdash; <code>boolean[V][V]</code>. O(1) edge lookup but O(V&sup2;) space; only for dense graphs or when you constantly test "is there an edge?".</li>
+</ul>
+
+</div>
+
+<pre>
+Map&lt;Integer, List&lt;Integer&gt;&gt; graph = new HashMap&lt;&gt;();
+graph.computeIfAbsent(u, k -&gt; new ArrayList&lt;&gt;()).add(v);
+graph.computeIfAbsent(v, k -&gt; new ArrayList&lt;&gt;()).add(u);  // undirected
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Default to an adjacency list unless told the graph is dense. Many "grid" problems (islands, maze) are implicit graphs where neighbours are the four adjacent cells &mdash; no explicit structure needed.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q34">
+Q34. Graph BFS and DFS &mdash; and Number of Islands
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+DFS (stack/recursion) goes deep; BFS (queue) explores level by level and finds the <b>shortest path in an unweighted graph</b>. Both need a <b>visited set</b> to avoid infinite loops on cycles. "Number of Islands" is a grid-DFS classic: each unvisited land cell starts a flood-fill.
+</p>
+
+</div>
+
+<pre>
+int numIslands(char[][] grid) {
+    int count = 0;
+    for (int r = 0; r &lt; grid.length; r++)
+        for (int c = 0; c &lt; grid[0].length; c++)
+            if (grid[r][c] == '1') { dfs(grid, r, c); count++; }
+    return count;
+}
+void dfs(char[][] g, int r, int c) {
+    if (r &lt; 0 || c &lt; 0 || r &gt;= g.length || c &gt;= g[0].length || g[r][c] != '1') return;
+    g[r][c] = '0';                       // mark visited
+    dfs(g,r+1,c); dfs(g,r-1,c); dfs(g,r,c+1); dfs(g,r,c-1);
+}
+// Time O(rows &middot; cols), Space O(rows &middot; cols) worst-case recursion
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Forgetting the visited check is the #1 graph bug &mdash; it causes infinite loops. Use BFS when the question says "shortest" / "fewest steps"; use DFS for connectivity, flood-fill, and path-existence.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q35">
+Q35. Topological Sort (and Cycle Detection in a DAG)
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+A topological sort orders the nodes of a <b>directed acyclic graph</b> so every edge points forward &mdash; used for build/dependency ordering and course scheduling. Kahn's algorithm uses in-degrees and a queue; if you can't process all nodes, the graph has a cycle.
+</p>
+
+</div>
+
+<pre>
+int[] topoSort(int n, int[][] edges) {
+    List&lt;List&lt;Integer&gt;&gt; adj = new ArrayList&lt;&gt;();
+    int[] indeg = new int[n];
+    for (int i = 0; i &lt; n; i++) adj.add(new ArrayList&lt;&gt;());
+    for (int[] e : edges) { adj.get(e[0]).add(e[1]); indeg[e[1]]++; }
+    Queue&lt;Integer&gt; q = new LinkedList&lt;&gt;();
+    for (int i = 0; i &lt; n; i++) if (indeg[i] == 0) q.add(i);
+    int[] order = new int[n]; int idx = 0;
+    while (!q.isEmpty()) {
+        int u = q.poll(); order[idx++] = u;
+        for (int v : adj.get(u)) if (--indeg[v] == 0) q.add(v);
+    }
+    return idx == n ? order : new int[0];   // empty => cycle
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+"Course schedule", "build order", "task dependencies" all map to topological sort. The fact that incomplete processing reveals a cycle is the standard way to detect cycles in a directed graph.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q36">
+Q36. Dijkstra's Shortest Path (Weighted Graph)
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium
+</p>
+
+<div class="answer">
+
+<p>
+Dijkstra finds shortest paths from a source in a graph with <b>non-negative</b> edge weights. It's BFS with a min-heap (priority queue) ordering by cumulative distance &mdash; always expand the closest unfinalised node next. Complexity O((V+E) log V).
+</p>
+
+</div>
+
+<pre>
+int[] dijkstra(List&lt;int[]&gt;[] adj, int src, int n) {   // adj[u] = {v, weight}
+    int[] dist = new int[n]; Arrays.fill(dist, Integer.MAX_VALUE);
+    dist[src] = 0;
+    PriorityQueue&lt;int[]&gt; pq = new PriorityQueue&lt;&gt;((a,b) -&gt; a[1] - b[1]); // {node, dist}
+    pq.offer(new int[]{src, 0});
+    while (!pq.isEmpty()) {
+        int[] cur = pq.poll(); int u = cur[0], d = cur[1];
+        if (d &gt; dist[u]) continue;                  // stale entry
+        for (int[] e : adj[u]) {
+            int v = e[0], nd = d + e[1];
+            if (nd &lt; dist[v]) { dist[v] = nd; pq.offer(new int[]{v, nd}); }
+        }
+    }
+    return dist;
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+Dijkstra fails with <b>negative</b> weights &mdash; use Bellman-Ford there. For unweighted graphs, plain BFS already gives shortest paths (every edge weight is 1), so don't over-engineer.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q37">
+Q37. Union-Find (Disjoint Set Union)
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium
+</p>
+
+<div class="answer">
+
+<p>
+Union-Find tracks connectivity between elements with near-O(1) <code>find</code> and <code>union</code> (with path compression + union by rank). It answers "are these connected?" and detects cycles in an undirected graph &mdash; the backbone of Kruskal's MST.
+</p>
+
+</div>
+
+<pre>
+class DSU {
+    int[] parent, rank;
+    DSU(int n) { parent = new int[n]; rank = new int[n];
+        for (int i = 0; i &lt; n; i++) parent[i] = i; }
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);  // path compression
+        return parent[x];
+    }
+    boolean union(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;                        // already connected (cycle)
+        if (rank[ra] &lt; rank[rb]) { int t=ra; ra=rb; rb=t; }
+        parent[rb] = ra;
+        if (rank[ra] == rank[rb]) rank[ra]++;
+        return true;
+    }
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Reach for Union-Find on "number of connected components", "redundant connection / detect cycle in undirected graph", and "accounts merge". With both optimisations, operations are effectively O(&alpha;(n)) &mdash; inverse-Ackermann, practically constant.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h11">SECTION 9 - RECURSION &amp; BACKTRACKING</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q38">
+Q38. What Makes a Correct Recursive Solution?
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+Every recursion needs a <b>base case</b> that stops it and a <b>recursive case</b> that makes progress toward that base. Trust that the recursive call solves the smaller problem ("the leap of faith"), then combine. Miss the base case and you get a <code>StackOverflowError</code>.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Java has no tail-call optimisation, so deep linear recursion overflows. For very deep inputs convert to iteration with an explicit stack, or restructure to balanced (divide-and-conquer) recursion.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q39">
+Q39. Backtracking Template &mdash; Subsets, Permutations, Combinations
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Backtracking explores a decision tree: <b>choose</b> &rarr; <b>recurse</b> &rarr; <b>un-choose</b>. It generates all subsets/permutations/combinations and solves constraint problems (N-Queens, Sudoku) by abandoning branches that can't lead to a solution ("pruning").
+</p>
+
+</div>
+
+<pre>
+// All subsets (the power set)
+List&lt;List&lt;Integer&gt;&gt; subsets(int[] nums) {
+    List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+    backtrack(nums, 0, new ArrayList&lt;&gt;(), res);
+    return res;
+}
+void backtrack(int[] nums, int start, List&lt;Integer&gt; path, List&lt;List&lt;Integer&gt;&gt; res) {
+    res.add(new ArrayList&lt;&gt;(path));            // record current subset
+    for (int i = start; i &lt; nums.length; i++) {
+        path.add(nums[i]);                     // choose
+        backtrack(nums, i + 1, path, res);     // recurse
+        path.remove(path.size() - 1);          // un-choose
+    }
+}
+// Subsets: O(2^n) results; permutations: O(n!)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+The choose / recurse / un-choose skeleton is identical across all backtracking problems &mdash; only the choices, the base case, and the pruning condition change. Always copy the path (<code>new ArrayList&lt;&gt;(path)</code>) when recording, or every result points at the same mutating list.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h12">SECTION 10 - DYNAMIC PROGRAMMING</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q40">
+Q40. How Do You Recognise and Approach a DP Problem?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+DP applies when a problem has <b>overlapping subproblems</b> (the same smaller problems recur) and <b>optimal substructure</b> (the optimal answer builds from optimal sub-answers). Signals: "count the number of ways", "minimum/maximum cost", "can you reach", "longest/shortest".
+</p>
+
+<p>
+Approach: (1) define the state, (2) write the recurrence/transition, (3) identify base cases, (4) choose memoization (top-down) or tabulation (bottom-up), (5) optimise space if each state only needs the previous row.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Start by writing the brute-force recursion, <i>notice</i> the repeated calls, then add a cache &mdash; that's memoization, and it's the easiest way to derive the DP under pressure. Convert to bottom-up tabulation only if you need to drop the recursion stack.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q41">
+Q41. 1D DP &mdash; Climbing Stairs / House Robber
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Many 1D DP problems reduce to "each state depends on the previous one or two". Climbing stairs (ways to reach step n taking 1 or 2 steps) is literally Fibonacci. House Robber (max sum, no two adjacent) is dp[i] = max(skip i, rob i + dp[i-2]).
+</p>
+
+</div>
+
+<pre>
+int rob(int[] nums) {
+    int prev2 = 0, prev1 = 0;
+    for (int n : nums) {
+        int cur = Math.max(prev1, prev2 + n);   // skip vs rob
+        prev2 = prev1; prev1 = cur;
+    }
+    return prev1;
+}
+// Time O(n), Space O(1)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+When the recurrence only looks back a fixed number of steps, you can drop the array and keep two or three rolling variables &mdash; O(1) space. Demonstrating that optimisation after the O(n)-space version is a strong close.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q42">
+Q42. 0/1 Knapsack
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Given items with weights and values and a capacity, maximise value without exceeding capacity; each item is taken or not (0/1). State: dp[i][w] = best value using the first i items within capacity w. Transition: skip the item, or take it (if it fits) and add its value.
+</p>
+
+</div>
+
+<pre>
+int knapsack(int[] wt, int[] val, int cap) {
+    int n = wt.length;
+    int[] dp = new int[cap + 1];                 // space-optimised to 1D
+    for (int i = 0; i &lt; n; i++)
+        for (int w = cap; w &gt;= wt[i]; w--)        // iterate weight DESC for 0/1
+            dp[w] = Math.max(dp[w], dp[w - wt[i]] + val[i]);
+    return dp[cap];
+}
+// Time O(n &middot; cap), Space O(cap)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+The descending weight loop is what makes it <b>0/1</b> (each item used once); an ascending loop would allow reuse &mdash; that's the <b>unbounded</b> knapsack / coin-change variant. Knowing why the loop direction matters is the differentiator.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q43">
+Q43. Coin Change &amp; Longest Common Subsequence
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+<b>Coin Change</b> (fewest coins to make an amount) is unbounded knapsack: dp[a] = 1 + min over coins of dp[a - coin]. <b>LCS</b> (longest common subsequence of two strings) is the canonical 2D string DP: if characters match, extend the diagonal; else take the better of dropping one char from either string.
+</p>
+
+</div>
+
+<pre>
+int coinChange(int[] coins, int amount) {
+    int[] dp = new int[amount + 1];
+    Arrays.fill(dp, amount + 1);                 // "infinity"
+    dp[0] = 0;
+    for (int a = 1; a &lt;= amount; a++)
+        for (int c : coins)
+            if (c &lt;= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);
+    return dp[amount] &gt; amount ? -1 : dp[amount];
+}
+// Time O(amount &middot; coins), Space O(amount)
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+LCS is the parent of edit distance, diff tools, and longest-common-substring. Recognising "two sequences, find a common/aligned structure" &rarr; 2D DP with an (i, j) grid is the reusable insight.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h13">SECTION 11 - SEARCHING &amp; SORTING</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q44">
+Q44. Binary Search and Its Variants
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<div class="answer">
+
+<p>
+Binary search finds a target in a <b>sorted</b> array in O(log n) by halving the range. The variants &mdash; first/last occurrence, insertion point, search in a rotated array &mdash; are the same skeleton with adjusted boundary logic. Use <code>lo + (hi - lo) / 2</code> to avoid overflow.
+</p>
+
+</div>
+
+<pre>
+int binarySearch(int[] a, int target) {
+    int lo = 0, hi = a.length - 1;
+    while (lo &lt;= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] == target) return mid;
+        if (a[mid] &lt; target) lo = mid + 1; else hi = mid - 1;
+    }
+    return -1;
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+"Binary search the answer" is a powerful senior pattern: when the answer is monotonic (e.g. "minimum capacity to ship in D days"), binary-search over the answer space, not the array. Watch the <code>&lt;=</code> vs <code>&lt;</code> boundary and the overflow-safe midpoint &mdash; the two classic bugs.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q45">
+Q45. How Do Quick Sort and Merge Sort Work?
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+<b>Quick sort</b> picks a pivot, partitions elements around it, and recurses &mdash; average O(n log n), worst O(n&sup2;) (bad pivots), in-place, not stable. <b>Merge sort</b> splits in half, sorts each, and merges &mdash; guaranteed O(n log n), stable, but needs O(n) extra space.
+</p>
+
+</div>
+
+<table border="1">
+
+<tr><th>Algorithm</th><th>Avg</th><th>Worst</th><th>Stable</th><th>Space</th></tr>
+<tr><td>Quick</td><td>O(n log n)</td><td>O(n&sup2;)</td><td>No</td><td>O(log n)</td></tr>
+<tr><td>Merge</td><td>O(n log n)</td><td>O(n log n)</td><td>Yes</td><td>O(n)</td></tr>
+<tr><td>Heap</td><td>O(n log n)</td><td>O(n log n)</td><td>No</td><td>O(1)</td></tr>
+
+</table>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Java's <code>Arrays.sort</code> uses <b>dual-pivot quicksort for primitives</b> (speed; stability irrelevant) and <b>Timsort for objects</b> (a stable merge/insertion hybrid). Stability matters for objects (sorting by one field while preserving another's order), not primitives &mdash; that's why they differ.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h14">SECTION 12 - GREEDY &amp; BIT MANIPULATION</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q46">
+Q46. What Is a Greedy Algorithm? (Interval Scheduling)
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: Medium-High
+</p>
+
+<div class="answer">
+
+<p>
+A greedy algorithm makes the locally optimal choice at each step, hoping it yields a global optimum. It's correct only when the problem has the <b>greedy-choice property</b> &mdash; e.g. activity selection: to fit the most non-overlapping intervals, always pick the one that <b>ends earliest</b>.
+</p>
+
+</div>
+
+<pre>
+int maxActivities(int[][] intervals) {
+    Arrays.sort(intervals, (a,b) -&gt; a[1] - b[1]);  // by end time
+    int count = 0, lastEnd = Integer.MIN_VALUE;
+    for (int[] iv : intervals)
+        if (iv[0] &gt;= lastEnd) { count++; lastEnd = iv[1]; }
+    return count;
+}
+</pre>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Greedy is fast but often <i>wrong</i> &mdash; coin change with arbitrary denominations needs DP, not greedy. The senior move is to state <i>why</i> greedy is valid here (the exchange argument), or to recognise when it isn't and switch to DP.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q47">
+Q47. Common Bit Manipulation Tricks
+</div>
+
+<p class="roi">
+ROI: ★★★☆☆
+Frequency: Medium
+</p>
+
+<div class="answer">
+
+<p>
+Bit tricks give O(1) operations and are occasionally the elegant answer:
+</p>
+
+<ul>
+<li><code>x &amp; 1</code> &mdash; is x odd?</li>
+<li><code>x &gt;&gt; 1</code> / <code>x &lt;&lt; 1</code> &mdash; divide / multiply by 2</li>
+<li><code>x &amp; (x - 1)</code> &mdash; clears the lowest set bit (count bits / check power of two)</li>
+<li><code>a ^ b</code> &mdash; XOR; <code>x ^ x = 0</code>, so XOR-ing all elements finds the single non-duplicated number</li>
+</ul>
+
+</div>
+
+<pre>
+// "Single Number": every element appears twice except one
+int singleNumber(int[] nums) {
+    int x = 0;
+    for (int n : nums) x ^= n;   // pairs cancel, the unique survives
+    return x;
+}
+// Time O(n), Space O(1)
+boolean isPowerOfTwo(int n) { return n &gt; 0 && (n &amp; (n - 1)) == 0; }
+</pre>
+
+<div class="followup">
+
+<h3>Interview Favorite</h3>
+
+<p>
+The XOR "single number" trick (O(1) space, no extra structure) and <code>n &amp; (n-1)</code> for power-of-two / bit counting are the two that come up most. Don't force bit tricks where a HashMap is clearer &mdash; use them when O(1) space is required.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h15">SECTION 13 - JAVA COLLECTIONS FOR DSA</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q48">
+Q48. Which Java Collection for Which Job? (Cheat Sheet)
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Very High
+</p>
+
+<table border="1">
+
+<tr><th>Need</th><th>Use</th><th>Key Operations</th></tr>
+<tr><td>Dynamic array, indexed access</td><td>ArrayList</td><td>get/set O(1), add amortized O(1)</td></tr>
+<tr><td>Stack or Queue or Deque</td><td>ArrayDeque</td><td>push/pop/offer/poll O(1)</td></tr>
+<tr><td>O(1) key lookup / counting</td><td>HashMap</td><td>get/put O(1) avg</td></tr>
+<tr><td>O(1) membership / dedup</td><td>HashSet</td><td>add/contains O(1) avg</td></tr>
+<tr><td>Sorted keys, range queries</td><td>TreeMap / TreeSet</td><td>O(log n), floor/ceiling/firstKey</td></tr>
+<tr><td>Min/max repeatedly, top-K</td><td>PriorityQueue</td><td>peek O(1), offer/poll O(log n)</td></tr>
+<tr><td>Insertion / access order</td><td>LinkedHashMap</td><td>O(1), ordered iteration (LRU)</td></tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+Picking the right collection often <i>is</i> the optimisation. "Sorted + log-time" &rarr; TreeMap; "top-K / scheduling" &rarr; PriorityQueue; "seen before?" &rarr; HashSet; "stack/queue" &rarr; ArrayDeque (never the legacy <code>Stack</code>/<code>Vector</code>).
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+<code>TreeMap</code>'s <code>floorKey</code>/<code>ceilingKey</code>/<code>higherKey</code> are quietly powerful for "find the closest value" and interval problems &mdash; they turn an O(n) scan into O(log n). Many candidates forget these exist.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q49">
+Q49. Common Java Gotchas in Coding Interviews
+</div>
+
+<p class="roi">
+ROI: ★★★★☆
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li><b>Integer overflow</b> &mdash; <code>int</code> sums/midpoints overflow silently; use <code>long</code> or <code>lo + (hi-lo)/2</code>.</li>
+<li><b>== vs equals</b> &mdash; <code>==</code> compares references for objects; use <code>.equals()</code>. Watch Integer auto-boxing caching (-128..127).</li>
+<li><b>Array vs List</b> &mdash; arrays use <code>.length</code>, Lists use <code>.size()</code>, Strings use <code>.length()</code>.</li>
+<li><b>char arithmetic</b> &mdash; <code>s.charAt(i) - 'a'</code> indexes a 26-count array cleanly.</li>
+<li><b>Custom keys</b> &mdash; objects used as HashMap keys need consistent <code>equals()</code> + <code>hashCode()</code>.</li>
+</ul>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+Overflow is the most common silent bug, especially in binary search and sum problems. Saying "I'll use long here to be safe against overflow" unprompted is a small detail that signals real production experience.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h16">QUICK REVISION SHEET</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="answer">
+
+<h3>Pattern &rarr; Trigger</h3>
+
+<ul>
+<li><b>HashMap/Set</b> &mdash; "have I seen", counting, dedup; O(n&sup2;)&rarr;O(n)</li>
+<li><b>Two pointers</b> &mdash; sorted array, pair/triplet, in place, palindrome</li>
+<li><b>Sliding window</b> &mdash; longest/shortest contiguous subarray/substring</li>
+<li><b>Prefix sum</b> &mdash; repeated range sums, subarray-sum-equals-k</li>
+<li><b>Fast/slow pointers</b> &mdash; linked-list cycle, middle, nth-from-end</li>
+<li><b>Monotonic stack</b> &mdash; next greater/smaller, histogram, rain water</li>
+<li><b>BFS</b> &mdash; shortest path in unweighted graph, level order</li>
+<li><b>DFS / backtracking</b> &mdash; connectivity, flood fill, subsets/permutations</li>
+<li><b>Heap</b> &mdash; top-K, kth largest, merge-K, scheduling</li>
+<li><b>Topological sort</b> &mdash; dependencies, build/course order</li>
+<li><b>Union-Find</b> &mdash; connected components, undirected cycle</li>
+<li><b>Dijkstra</b> &mdash; shortest path, non-negative weights</li>
+<li><b>DP</b> &mdash; "count ways", "min/max cost", overlapping subproblems</li>
+<li><b>Binary search</b> &mdash; sorted data, or "search the monotonic answer"</li>
+<li><b>Greedy</b> &mdash; locally optimal works (prove it!); else DP</li>
+</ul>
+
+<h3>Process</h3>
+
+<ul>
+<li>Clarify input, constraints, edge cases (empty, one element, duplicates, negatives)</li>
+<li>State approach AND complexity out loud before coding</li>
+<li>Use ArrayDeque (not Stack), long for sums, equals() for objects</li>
+<li>Test on a small example and an edge case</li>
+</ul>
+
+</div>
+
+</div>
+
+<hr>
+
+</body>
+</html>

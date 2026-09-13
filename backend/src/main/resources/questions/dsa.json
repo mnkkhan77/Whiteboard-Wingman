@@ -1,0 +1,47 @@
+[
+  {"id": "dsa-e1", "difficulty": "EASY", "questionType": "CODING", "promptText": "Given an array of integers, find two numbers that add up to a given target. Explain your approach and its time complexity.",
+    "ioFormat": "Line 1: space-separated integers (the array). Line 2: the target integer. Print the two 0-indexed positions whose values sum to the target, space-separated, in ascending order of index.",
+    "testCases": [
+      {"input": "2 7 11 15\n9", "expectedOutput": "0 1"},
+      {"input": "3 2 4\n6", "expectedOutput": "1 2"}
+    ]},
+  {"id": "dsa-e2", "difficulty": "EASY", "questionType": "CODING", "promptText": "Reverse a singly linked list. Walk through your approach.",
+    "ioFormat": "Line 1: space-separated integers representing the linked list values in order. Print the reversed list as space-separated integers on one line.",
+    "testCases": [
+      {"input": "1 2 3 4 5", "expectedOutput": "5 4 3 2 1"},
+      {"input": "1 2", "expectedOutput": "2 1"}
+    ]},
+  {"id": "dsa-e3", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is the difference between a stack and a queue, and give a real use case for each."},
+  {"id": "dsa-mcq1", "difficulty": "EASY", "questionType": "MCQ", "promptText": "What is the average-case time complexity of searching for an element in a hash map?",
+    "options": ["O(1)", "O(log n)", "O(n)", "O(n^2)"], "correctOptionIndex": 0,
+    "explanation": "A well-distributed hash map gives O(1) average-case lookup; worst case can degrade to O(n) with heavy collisions."},
+  {"id": "dsa-m1", "difficulty": "MEDIUM", "questionType": "CODING", "promptText": "Given a string, find the length of the longest substring without repeating characters. Explain your approach.",
+    "ioFormat": "Line 1: a string. Print a single integer: the length of the longest substring without repeating characters.",
+    "testCases": [
+      {"input": "abcabcbb", "expectedOutput": "3"},
+      {"input": "bbbbb", "expectedOutput": "1"}
+    ]},
+  {"id": "dsa-m2", "difficulty": "MEDIUM", "questionType": "CODING", "promptText": "Given a binary tree, determine if it is height-balanced. Explain your approach and complexity.",
+    "ioFormat": "Line 1: level-order traversal of the binary tree, space-separated integers, using 'N' for a null child. Print 'true' if the tree is height-balanced, else 'false'.",
+    "testCases": [
+      {"input": "3 9 20 N N 15 7", "expectedOutput": "true"},
+      {"input": "1 2 2 3 3 N N 4 4", "expectedOutput": "false"}
+    ]},
+  {"id": "dsa-m3", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "Explain the difference between BFS and DFS, and describe a scenario where you'd prefer one over the other."},
+  {"id": "dsa-mcq2", "difficulty": "MEDIUM", "questionType": "MCQ", "promptText": "Which sorting algorithm has the best worst-case time complexity?",
+    "options": ["Quick sort", "Bubble sort", "Merge sort", "Insertion sort"], "correctOptionIndex": 2,
+    "explanation": "Merge sort guarantees O(n log n) in the worst case; quicksort can degrade to O(n^2), and bubble/insertion sort are O(n^2) in the worst case."},
+  {"id": "dsa-h1", "difficulty": "HARD", "questionType": "CODING", "promptText": "Given a list of intervals, merge all overlapping intervals. Explain your approach and its time complexity.",
+    "ioFormat": "Line 1: number of intervals n. Next n lines: two space-separated integers 'start end' per interval. Print the merged intervals, one per line, as 'start end', sorted by start.",
+    "testCases": [
+      {"input": "4\n1 3\n2 6\n8 10\n15 18", "expectedOutput": "1 6\n8 10\n15 18"},
+      {"input": "2\n1 4\n4 5", "expectedOutput": "1 5"}
+    ]},
+  {"id": "dsa-h2", "difficulty": "HARD", "questionType": "CODING", "promptText": "Design an algorithm to find the median of two sorted arrays in O(log(min(m,n))) time.",
+    "ioFormat": "Line 1: space-separated integers for the first sorted array (blank line if empty). Line 2: space-separated integers for the second sorted array. Print the median as a floating point number (e.g. 2.0 or 2.5).",
+    "testCases": [
+      {"input": "1 3\n2", "expectedOutput": "2.0"},
+      {"input": "1 2\n3 4", "expectedOutput": "2.5"}
+    ]},
+  {"id": "dsa-h3", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "Explain how a trie works and describe a real-world system where it would outperform a hash map."}
+]

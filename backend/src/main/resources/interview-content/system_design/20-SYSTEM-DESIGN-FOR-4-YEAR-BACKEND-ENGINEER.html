@@ -1,0 +1,3564 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13-SYSTEM-DESIGN-FOR-4-YEAR-BACKEND-ENGINEER.html</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    line-height:1.7;
+    margin:40px;
+    background:#f4f6f8;
+    color:#222;
+}
+h1,h2,h3,h4{
+    color:#1f4e79;
+}
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:8px;
+    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+}
+.question{
+    color:#c0392b;
+    font-weight:bold;
+    font-size:20px;
+}
+.answer{
+    margin-top:10px;
+}
+.roi{
+    color:green;
+    font-weight:bold;
+}
+.followup{
+    background:#fff8dc;
+    padding:10px;
+    border-left:4px solid orange;
+    margin-top:10px;
+}
+pre{
+    background:#f4f4f4;
+    padding:10px;
+    border-radius:4px;
+    overflow:auto;
+}
+table{
+    border-collapse:collapse;
+    margin:10px 0;
+}
+th,td{
+    border:1px solid #ccc;
+    padding:6px 10px;
+    text-align:left;
+}
+th{
+    background:#1f4e79;
+    color:white;
+}
+</style>
+</head>
+<body>
+
+<h1 id="h1">20 - SYSTEM DESIGN FOR JAVA SPRING BOOT BACKEND ENGINEERS</h1>
+
+<p>
+
+This file is specifically tailored for:
+
+* 3-6 Years Experience
+* Java Backend Developers
+* Spring Boot Engineers
+* Microservice Engineers
+* Senior Software Engineer Interviews
+
+A common misconception is that interviewers expect Google-scale systems.
+
+Most companies expect:
+
+* Structured thinking
+* Tradeoff analysis
+* Scalability awareness
+* Reliability awareness
+* Good database decisions
+* Caching strategy
+* Communication skills
+
+</p>
+
+<hr>
+
+<h1 id="h2">SYSTEM DESIGN FRAMEWORK</h1>
+
+<p>
+
+Before answering ANY system design question:
+
+</p>
+
+<ol>
+
+<li>Clarify Requirements</li>
+<li>Estimate Scale</li>
+<li>Design APIs</li>
+<li>Identify Core Components</li>
+<li>Choose Database</li>
+<li>Add Caching</li>
+<li>Add Scalability</li>
+<li>Add Reliability</li>
+<li>Discuss Tradeoffs</li>
+</ol>
+
+<hr>
+
+<h1 id="h3">SECTION 1 - URL SHORTENER</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q1">
+Q1. Design TinyURL
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Functional Requirements</h3>
+
+<div class="answer">
+<ul>
+<li>Create Short URL</li>
+<li>Redirect To Original URL</li>
+<li>Track Clicks</li>
+</ul>
+</div>
+
+<h3>High-Level Design</h3>
+
+<pre>
+
+Client
+
+↓
+
+API
+
+↓
+
+URL Service
+
+↓
+
+Database
+
+↓
+
+Redis Cache
+
+</pre>
+
+<div class="answer">
+
+<p>
+A URL shortener is a read-heavy system. For every short URL created, the same link may be resolved millions of times, so the dominant traffic pattern is redirects, not writes. This shapes every decision: we optimise the read path aggressively with caching while keeping writes simple and durable in the primary database.
+</p>
+
+<p>
+The write path stores the mapping (short code → original URL) in the database. The read path first checks Redis; on a hit it returns immediately, on a miss it loads from the database and back-fills the cache. Because short codes are immutable once created, cache invalidation is trivial here, which is what makes a URL shortener a popular warm-up question.
+</p>
+
+<p>
+On scale estimation, a senior answer mentions rough numbers: if we expect 100 million new URLs per year and a 10:1 read-to-write ratio, we plan capacity and storage around the read traffic and choose a cache hit ratio target (for example 90%+) to keep database load bounded.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q2">
+Q2. How To Generate Short Code?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Options</h3>
+
+<div class="answer">
+<ul>
+<li>Base62 Encoding</li>
+<li>Hashing</li>
+<li>Random Generation</li>
+</ul>
+</div>
+
+<h3>Preferred</h3>
+
+<div class="answer">
+
+<p>
+Base62(ID)
+</p>
+
+<p>
+The preferred approach is to take a unique numeric ID (typically an auto-increment or a distributed ID such as Snowflake) and encode it into Base62 (a-z, A-Z, 0-9). Base62 produces short, URL-safe codes and guarantees uniqueness because it is a deterministic encoding of an already-unique number, so there are zero collisions by construction.
+</p>
+
+<p>
+Hashing (for example MD5 truncated) and random generation both risk collisions, which forces a uniqueness check or retry on every insert and adds latency. Base62 over a guaranteed-unique ID avoids that problem entirely. The trade-off is that sequential IDs make codes predictable; if that matters, you can shuffle the ID space or add a random offset before encoding.
+</p>
+
+<p>
+At scale the ID source itself must be discussed. A single auto-increment column becomes a write bottleneck and a single point of failure, so distributed systems use ID ranges per node, a ticket server, or Snowflake-style IDs that embed timestamp and machine bits.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q3">
+Q3. Why Redis?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Frequently accessed URLs can be served without hitting the database. A small percentage of links typically account for the majority of redirect traffic (the classic hot-key / Pareto distribution), so caching those hot URLs in Redis removes the heaviest load from the primary database.
+</p>
+
+<p>
+Redis is in-memory, so reads return in sub-millisecond time compared with a disk-backed relational lookup. Because the redirect path is the most latency-sensitive and highest-volume part of the system, serving it from memory directly improves both response time and overall throughput.
+</p>
+
+<p>
+The cache-aside pattern fits naturally: on a miss we read the database and store the result with a TTL. Since short-code mappings are immutable, stale data is not a concern, which keeps the caching layer simple and reliable.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q4">
+Q4. Potential Bottlenecks
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Database Reads</li>
+<li>Hot URLs</li>
+<li>Cache Misses</li>
+<li>Redirect Traffic</li>
+</ul>
+
+<p>
+Database reads become a bottleneck when the cache hit ratio drops, because every miss falls through to disk-backed storage. The mitigation is a higher cache hit ratio, read replicas, and indexing the short-code column so lookups are O(log n) rather than full scans.
+</p>
+
+<p>
+Hot URLs concentrate traffic on a single cache key, which can overload one Redis shard. Strategies include replicating hot keys across nodes, using a local in-process cache in front of Redis for the hottest entries, and load balancing redirect traffic across application instances.
+</p>
+
+<p>
+Cache misses are most damaging right after a deployment or cache flush, when many requests stampede the database simultaneously. This is the cache stampede problem, addressed later in this file with distributed locks, cache warming, and randomised TTLs.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h4">SECTION 2 - RATE LIMITER</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q5">
+Q5. What Is Rate Limiting?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<p>
+Rate limiting restricts the number of requests a client can make within a time window. It is enforced per identity, typically per user, per API key, or per IP address, and rejects or delays requests once the configured threshold is exceeded.
+</p>
+
+<p>
+It is a protective control rather than a feature: it keeps a small number of clients from consuming a disproportionate share of capacity. In a Spring Boot system it usually lives at the API gateway or in a filter so the limit is applied before any expensive business logic runs.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q6">
+Q6. Why Rate Limiting?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Prevent Abuse</li>
+<li>Prevent DDoS</li>
+<li>Protect Resources</li>
+<li>Fair Usage</li>
+</ul>
+
+<p>
+The primary motivation is protecting shared resources. Without limits, a single misbehaving client (an aggressive script, a retry storm, or a malicious actor) can exhaust database connections, thread pools, or downstream quotas and degrade service for everyone.
+</p>
+
+<p>
+Rate limiting also enforces fair usage across tenants and supports tiered pricing, where different plans get different limits. As a defence layer it blunts brute-force and denial-of-service attempts, though it is one part of a broader strategy that also includes WAFs and load shedding.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q7">
+Q7. Common Algorithms
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Fixed Window</li>
+<li>Sliding Window</li>
+<li>Token Bucket</li>
+<li>Leaky Bucket</li>
+</ul>
+
+<p>
+Fixed Window counts requests per discrete interval (for example per minute). It is the simplest, but it allows bursts at window boundaries: a client can send the full quota at the end of one window and again at the start of the next, briefly doubling the intended rate.
+</p>
+
+<p>
+Sliding Window smooths that boundary problem by tracking requests over a rolling time range, at the cost of more state. Token Bucket allows controlled bursts by refilling tokens at a fixed rate, while Leaky Bucket enforces a strictly smooth output rate by draining a queue at a constant pace. The right choice depends on whether bursts are acceptable.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q8">
+Q8. Most Common Production Choice?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Token Bucket.
+</p>
+
+<p>
+Token Bucket is the most common production choice because it balances two competing needs: a steady average rate plus tolerance for short bursts. Tokens are added to a bucket at a fixed refill rate up to a maximum capacity, and each request consumes a token; when the bucket is empty, requests are throttled.
+</p>
+
+<p>
+This maps well to real user behaviour, which is bursty rather than perfectly even. It is also cheap to implement with two values per client (token count and last refill timestamp), and those values can be stored and updated atomically in Redis, making it work across a distributed fleet of application servers.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q9">
+Q9. Why Redis For Rate Limiting?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Fast</li>
+<li>Atomic Operations</li>
+<li>Distributed</li>
+</ul>
+
+<p>
+The core challenge in a distributed system is that the limit must be enforced globally, not per server. If each of ten application instances kept its own in-memory counter, a client could effectively get ten times the intended limit. A shared store solves this, and Redis is the standard choice.
+</p>
+
+<p>
+Redis is fast because it is in-memory, and critically it offers atomic operations (INCR, EXPIRE) and Lua scripting so the read-modify-write of a counter happens without race conditions. Multiple application instances can safely increment the same counter, giving a single consistent view of usage across the whole fleet.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h5">SECTION 3 - NOTIFICATION SYSTEM</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q10">
+Q10. Design Notification System
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Channels</h3>
+
+<div class="answer">
+
+<ul>
+<li>Email</li>
+<li>SMS</li>
+<li>Push Notification</li>
+</ul>
+
+<p>
+A notification system is fundamentally an asynchronous, fan-out problem: one business event (an application submitted, a password reset) may produce several messages across different channels. The design separates the event source from delivery so that slow or failing providers never block the user-facing request.
+</p>
+
+<p>
+Each channel has its own delivery semantics and third-party provider (an email gateway, an SMS gateway, a push service such as FCM/APNs). A good design abstracts these behind a common interface so channels can be added without changing the core, and routes events to the correct channel based on user preferences.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q11">
+Q11. Architecture
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+User Action
+
+↓
+
+Kafka
+
+↓
+
+Notification Service
+
+↓
+
+Email Provider
+
+SMS Provider
+
+Push Provider
+
+</pre>
+
+<div class="answer">
+
+<p>
+The user action publishes an event to Kafka and returns immediately, so the user is never made to wait for an email or SMS to be sent. The Notification Service consumes those events asynchronously, decoupling event production from the slower, failure-prone work of contacting external providers.
+</p>
+
+<p>
+The Notification Service determines which channels apply, formats the message, and calls the relevant provider. Because the providers sit behind a queue, a provider outage causes a backlog rather than a user-facing failure, and the service can retry on its own schedule.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q12">
+Q12. Why Kafka?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<p>
+Notification delivery should not block user requests. Sending an email or hitting an SMS provider can take hundreds of milliseconds or fail outright, and we never want that latency or unreliability to leak into the synchronous request the user is waiting on.
+</p>
+
+<p>
+Kafka provides durable, ordered, replayable event storage. If the Notification Service crashes or a provider is down, events remain in the topic and are processed once consumers recover, so nothing is lost. This durability plus the ability to add new consumers (analytics, audit) without touching producers is what makes Kafka the standard choice over a simple in-memory queue.
+</p>
+
+<p>
+It also enables horizontal scaling: partitioned topics let multiple consumer instances process notifications in parallel, so throughput grows by adding consumers rather than rewriting the producer.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q13">
+Q13. Important Design Considerations
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Retries</li>
+<li>Idempotency</li>
+<li>Dead Letter Queue</li>
+<li>Monitoring</li>
+</ul>
+
+<p>
+Retries handle transient provider failures, but they must be bounded and use exponential backoff so a struggling provider is not hammered. This is exactly where idempotency becomes critical: a retry must not send the same notification twice, so each notification carries a unique key that the service deduplicates on.
+</p>
+
+<p>
+A Dead Letter Queue captures messages that fail repeatedly so they can be inspected and reprocessed instead of silently lost or endlessly retried. Monitoring and alerting on delivery rates, failure rates, and DLQ depth turn a black-box system into an operable one.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Senior Engineer Perspective</h3>
+
+<p>
+Idempotency is the answer interviewers are listening for here. At-least-once delivery is the default in Kafka, which means duplicates are a normal occurrence, not an edge case. A senior engineer designs the consumer to be idempotent (dedupe by message ID) so that re-delivery is safe rather than embarrassing.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h6">SECTION 4 - CHAT SYSTEM</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q14">
+Q14. Design Chat Application
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Requirements</h3>
+
+<div class="answer">
+
+<ul>
+<li>Send Messages</li>
+<li>Receive Messages</li>
+<li>Online Status</li>
+<li>Message History</li>
+</ul>
+
+<p>
+A chat application is defined by its real-time requirement: messages must reach the recipient with low latency and without the recipient polling. This pushes the design toward persistent connections rather than request-response, and toward a clear split between the live delivery path and the durable history store.
+</p>
+
+<p>
+Online status (presence) and message history are separate concerns. Presence is volatile, high-churn state that suits an in-memory store like Redis, while message history must be durably persisted and queryable, which suits a database optimised for write-heavy, time-ordered data.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q15">
+Q15. REST Or WebSocket?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+WebSocket.
+</p>
+
+<p>
+Chat requires real-time communication. REST is request-response: the client must ask the server for new messages, so delivering messages instantly would require constant polling, which is wasteful and still adds latency. WebSocket provides a persistent, bidirectional connection so the server can push a message to the recipient the moment it arrives.
+</p>
+
+<p>
+The trade-off is that WebSocket connections are stateful and long-lived, which complicates load balancing and scaling: each connection is pinned to a specific server, so you need a way (often Redis pub/sub or Kafka) to route a message to whichever server holds the recipient's connection. REST is still used for non-real-time operations like loading message history or user profiles.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q16">
+Q16. Chat Architecture
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+Client
+
+↕
+
+WebSocket Server
+
+↓
+
+Kafka
+
+↓
+
+Message Service
+
+↓
+
+Database
+
+</pre>
+
+<div class="answer">
+
+<p>
+The client holds a WebSocket connection to a WebSocket Server, which is responsible only for connection management and pushing messages. When a message is sent, the server publishes it to Kafka rather than writing to the database synchronously, keeping the live path fast.
+</p>
+
+<p>
+The Message Service consumes from Kafka, persists the message to the database for history, and routes it to the recipient's WebSocket server. This decoupling lets the delivery layer and the persistence layer scale independently, and ensures messages are durably stored even under bursts, because Kafka absorbs the spike.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h7">SECTION 5 - FILE STORAGE SYSTEM</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q17">
+Q17. Design Resume Upload Feature
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<p>
+Relevant for job portals. A resume upload feature is a classic object-storage problem: the file itself is large, immutable binary content, while the application only needs to reference it. The design therefore separates the bytes (stored in object storage) from the metadata (stored in the relational database).
+</p>
+
+<p>
+A senior answer also covers the upload path: clients should upload directly to object storage using pre-signed URLs rather than streaming bytes through the application server. This keeps large file transfers off the application tier, reduces its memory and bandwidth load, and improves scalability.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q18">
+Q18. Where Should Files Be Stored?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Avoid</h3>
+
+<pre>
+
+Database BLOB
+
+</pre>
+
+<h3>Preferred</h3>
+
+<pre>
+
+AWS S3
+
+Cloud Storage
+
+</pre>
+
+<div class="answer">
+
+<p>
+Object storage such as AWS S3 is purpose-built for large, durable, cheaply replicated binary content. It scales effectively without limit, offers high durability guarantees, integrates with CDNs for fast delivery, and supports lifecycle policies for archival, none of which a relational database provides efficiently.
+</p>
+
+<p>
+Storing files as database BLOBs bloats the database, slows backups and restores, consumes connection and buffer-pool resources meant for transactional queries, and makes replication heavier. The standard pattern is to keep only the file URL and metadata in the database and the bytes in S3.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q19">
+Q19. Why Not Store Large Files In Database?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Database Growth</li>
+<li>Backup Issues</li>
+<li>Performance Problems</li>
+</ul>
+
+<p>
+Large binary files cause uncontrolled database growth, and since the database is usually the most expensive and hardest-to-scale tier, filling it with bytes that never participate in queries is wasteful. Backups and restores become slow and costly because every byte must be copied with the transactional data.
+</p>
+
+<p>
+Performance also suffers: BLOB reads and writes compete for the same I/O, buffer pool, and connections as real queries, and a single large-file fetch can evict useful query data from cache. Object storage isolates this load entirely and is far cheaper per gigabyte.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q20">
+Q20. Metadata Storage
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Store In Database</h3>
+
+<pre>
+
+file_name
+
+url
+
+size
+
+uploaded_by
+
+created_at
+
+</pre>
+
+<div class="answer">
+
+<p>
+The database stores only the lightweight metadata that the application needs to query and authorise access: the file name, the storage URL or key, the size, who uploaded it, and when. This keeps rows small and queries fast while the heavy bytes live in S3.
+</p>
+
+<p>
+Keeping uploaded_by and created_at lets you enforce ownership (a user can only download their own resume) and apply retention policies. The url or key links the metadata row to the object in storage, so the two systems stay consistent through a single reference.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h8">SECTION 6 - JOB PORTAL DESIGN</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q21">
+Q21. Design A Job Portal
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Services</h3>
+
+<pre>
+
+User Service
+
+Job Service
+
+Application Service
+
+Notification Service
+
+Search Service
+
+</pre>
+
+<div class="answer">
+
+<p>
+The job portal decomposes into services around clear business domains. The User Service owns identity and profiles, the Job Service owns postings, the Application Service owns the apply workflow, the Notification Service handles asynchronous messaging, and the Search Service serves fast, full-text job discovery.
+</p>
+
+<p>
+This separation follows domain boundaries rather than technical layers, so each service can be scaled and reasoned about independently: search is read-heavy and benefits from a dedicated index, while applications are write-heavy and need strong consistency. For a 4-year engineer it is worth noting that this can start as a modular monolith and be split into services only when the team or load justifies it.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q22">
+Q22. Database Choice
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<pre>
+
+PostgreSQL
+
+</pre>
+
+<div class="answer">
+
+<p>
+Strong consistency. Complex filtering support.
+</p>
+
+<p>
+Job portal data is highly relational: users, jobs, recruiters, and applications reference each other through foreign keys, and operations like "prevent duplicate applications" need transactional guarantees. PostgreSQL gives ACID transactions, mature indexing, and a powerful query planner for the complex multi-column filters job search demands.
+</p>
+
+<p>
+A NoSQL store would offer easier horizontal scaling but would push consistency and join logic into the application, which is the wrong trade-off for data with strong relational integrity requirements. PostgreSQL handles the expected scale comfortably with read replicas and indexing.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q23">
+Q23. Search Optimization
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Use Elasticsearch/OpenSearch.
+</p>
+
+<p>
+Not PostgreSQL LIKE queries at scale.
+</p>
+
+<p>
+Full-text job search with relevance ranking, fuzzy matching, faceted filters, and typo tolerance is exactly what a search engine like Elasticsearch or OpenSearch is built for. It maintains inverted indexes that make text queries fast even over millions of documents, where a relational LIKE scan would degrade badly.
+</p>
+
+<p>
+The pattern is to keep PostgreSQL as the source of truth and asynchronously sync changes into the search index via an event stream such as Kafka. This keeps the two systems decoupled, accepts eventual consistency on the search side (a new job appears in search a moment after it is created), and lets each system do what it is best at.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q24">
+Q24. Prevent Duplicate Applications
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<pre>
+
+UNIQUE(user_id, job_id)
+
+</pre>
+
+<div class="answer">
+
+<p>
+A composite unique constraint on (user_id, job_id) enforces "one application per user per job" at the database level, which is the only place the guarantee can be made reliably. Even if two requests race in (a double-click or a retry), the database rejects the second insert, so correctness does not depend on application-level checks.
+</p>
+
+<p>
+Relying on a "check then insert" in application code is unsafe under concurrency: two threads can both read "no existing application" and both insert. The unique constraint closes that race, and the application simply catches the constraint-violation exception and returns a friendly "already applied" response.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q25">
+Q25. Caching Strategy
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Popular Jobs</li>
+<li>Company Profiles</li>
+<li>Frequently Viewed Jobs</li>
+</ul>
+
+<p>
+The right things to cache are read-heavy, slowly-changing, and frequently requested: popular and featured jobs, company profiles, and frequently viewed listings. These are read far more often than they change, so a cache delivers a high hit ratio and removes substantial load from the database.
+</p>
+
+<p>
+The cache-aside pattern with a sensible TTL fits well here. Because job and company data does change occasionally, the design must handle invalidation (or accept a short staleness window via TTL) so users do not see outdated postings. Highly personalised or write-heavy data is generally a poor caching candidate.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h9">PART 1 COMPLETE</h1>
+
+<p>
+
+Next Part:
+
+* Load Balancers
+* API Gateway Design
+* Caching Design
+* Redis Architecture
+* Search Systems
+* Scalability Questions
+* High Availability
+* Disaster Recovery
+
+These are heavily used in Senior Software Engineer interviews.
+
+</p>
+
+<!-- CONTINUATION OF 13-SYSTEM-DESIGN-FOR-4-YEAR-BACKEND-ENGINEER.html -->
+
+<!-- PART 2 - LOAD BALANCING, REDIS, CACHING, HIGH AVAILABILITY, SCALING -->
+
+<hr>
+
+<h1 id="h10">SECTION 7 - LOAD BALANCING</h1>
+
+<p>
+
+Almost every scalable system requires load balancing.
+
+Interviewers frequently ask:
+
+"How would you handle increasing traffic?"
+
+</p>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q26">
+Q26. What Is Load Balancing?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Distributing traffic across multiple servers.
+</p>
+
+<p>
+A load balancer sits in front of a pool of identical application instances and spreads incoming requests across them. This is the foundation of horizontal scaling: instead of buying a bigger server (vertical scaling, which has a ceiling), you add more commodity servers behind the balancer and traffic is shared among them.
+</p>
+
+<p>
+It also provides a single stable entry point and performs health checks, automatically removing unhealthy instances from rotation so failures are masked from users. Load balancers operate at Layer 4 (TCP) or Layer 7 (HTTP), with Layer 7 enabling routing decisions based on URL paths, headers, or cookies.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q27">
+Q27. Why Load Balancing?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>High Availability</li>
+<li>Scalability</li>
+<li>Fault Tolerance</li>
+<li>Better Resource Utilization</li>
+</ul>
+
+<p>
+Load balancing delivers high availability and fault tolerance because if one instance fails its health check, the balancer routes around it and users never notice. There is no single server whose failure takes down the service, which directly attacks the single-point-of-failure problem.
+</p>
+
+<p>
+It is also what makes horizontal scaling possible and keeps resource utilisation even, so no single server is overwhelmed while others sit idle. This combination of scalability and resilience is why nearly every production system places a load balancer in front of its application tier.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q28">
+Q28. Common Load Balancers
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Nginx</li>
+<li>HAProxy</li>
+<li>AWS ALB</li>
+<li>AWS NLB</li>
+</ul>
+
+<p>
+Nginx and HAProxy are widely used software load balancers that you run and configure yourself, giving fine-grained control. In cloud environments, managed options are common: the AWS Application Load Balancer (ALB) operates at Layer 7 for HTTP routing, while the Network Load Balancer (NLB) operates at Layer 4 for raw TCP throughput and ultra-low latency.
+</p>
+
+<p>
+The choice comes down to the layer you need and the operational model: ALB for content-based HTTP routing and managed scaling, NLB for high-performance TCP, and Nginx/HAProxy when you want full control or are running outside a cloud provider.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q29">
+Q29. Round Robin Load Balancing
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+Request 1 → Server A
+
+Request 2 → Server B
+
+Request 3 → Server C
+
+</pre>
+
+<div class="answer">
+
+<p>
+Round Robin cycles through the server pool in order, sending each new request to the next server. It is simple, stateless, and works well when all servers have similar capacity and all requests are roughly equal in cost.
+</p>
+
+<p>
+Its limitation is that it ignores actual load: if one request is expensive and ties up a server while the others are cheap, round robin will still keep handing that busy server more work. When request cost varies significantly, a load-aware strategy like least connections is a better fit.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q30">
+Q30. Least Connections Strategy
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Send request to server with fewest active connections.
+</p>
+
+<p>
+Least Connections routes each new request to whichever backend currently has the fewest open connections, which approximates routing to the least busy server. This adapts to uneven request costs far better than round robin, because a server stuck handling slow requests accumulates connections and stops receiving new ones until it catches up.
+</p>
+
+<p>
+It is the preferred strategy when request durations vary, such as a mix of quick lookups and long-running operations, because it naturally balances real load rather than just request count.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q31">
+Q31. Sticky Sessions
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Same user routed to same server.
+</p>
+
+<p>
+Sticky sessions (session affinity) pin a given user to the same backend, usually via a cookie, so that server-side session state held in memory remains accessible across that user's requests. It is a workaround for applications that keep state on the server.
+</p>
+
+</div>
+
+<h3>Problem</h3>
+
+<div class="answer">
+
+<p>
+Uneven traffic distribution.
+</p>
+
+<p>
+Stateless services are preferred.
+</p>
+
+<p>
+Stickiness undermines load balancing: traffic can pile up unevenly, and if a server dies, every user pinned to it loses their session. It also blocks clean horizontal scaling, because new instances cannot pick up existing users' sessions.
+</p>
+
+<p>
+The senior-level answer is to make services stateless: store session state externally (in Redis or a JWT held by the client) so any instance can serve any request. Then the load balancer is free to use round robin or least connections, and instances can be added or removed at will.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Senior Engineer Perspective</h3>
+
+<p>
+When an interviewer raises sticky sessions, they are usually probing whether you understand stateless design. The strong answer pivots immediately to externalising state. Stateless services are the foundation of cloud-native scaling, blue-green deployments, and auto-scaling groups, all of which break the moment a server holds irreplaceable in-memory state.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h11">SECTION 8 - REDIS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q32">
+Q32. What Is Redis?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+In-memory key-value datastore.
+</p>
+
+<p>
+Redis stores data in RAM rather than on disk, which is why it serves reads and writes in sub-millisecond time. It supports rich data structures beyond simple strings, and offers optional persistence (snapshots and append-only logs) so data can survive restarts, though it is most often used as a fast volatile layer.
+</p>
+
+<p>
+It is single-threaded for command execution, which guarantees that individual commands are atomic, a property heavily relied on for counters, locks, and rate limiting. It scales out through replication and clustering (sharding by key).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q33">
+Q33. Why Redis?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Fast</li>
+<li>Low Latency</li>
+<li>Simple</li>
+<li>Distributed</li>
+</ul>
+
+<p>
+Redis is chosen because in-memory access gives consistently low latency, which is exactly what caching, session lookups, and rate-limit checks need on the hot path. Its API is simple and its atomic operations make concurrency-sensitive patterns straightforward.
+</p>
+
+<p>
+It is also distributed-friendly: it acts as a single shared state store that many application instances can read and write consistently, which is essential for things like a global rate-limit counter or a distributed lock that must be honoured across the whole fleet.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q34">
+Q34. Common Redis Use Cases
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Caching</li>
+<li>Rate Limiting</li>
+<li>Session Storage</li>
+<li>Distributed Locks</li>
+<li>Leaderboards</li>
+</ul>
+
+<p>
+Caching is the headline use case: Redis sits in front of the database to absorb read traffic. Rate limiting uses its atomic counters, and session storage externalises user sessions so application servers stay stateless and horizontally scalable.
+</p>
+
+<p>
+Distributed locks (using SET NX with an expiry, or Redlock) coordinate access to a shared resource across servers, and leaderboards leverage the sorted-set structure to maintain ranked data efficiently. Each use case exploits a specific Redis strength: speed, atomicity, or a purpose-built data structure.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q35">
+Q35. Redis Data Structures
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>String</li>
+<li>Hash</li>
+<li>List</li>
+<li>Set</li>
+<li>Sorted Set</li>
+</ul>
+
+<p>
+Strings are the basic value type, ideal for cached blobs and counters. Hashes store field-value maps, perfect for representing an object like a user session without serialising the whole thing. Lists are ordered and support queue/stack operations.
+</p>
+
+<p>
+Sets store unique unordered members for membership tests and deduplication, while Sorted Sets keep members ordered by a score, which is what makes them the natural choice for leaderboards, priority queues, and sliding-window rate limiters. Choosing the right structure is what makes Redis solutions both fast and simple.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q36">
+Q36. What Is Redis TTL?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Time To Live.
+</p>
+
+<p>
+Automatically expires keys.
+</p>
+
+<p>
+TTL is an expiry set on a key so that Redis automatically deletes it after the configured duration. It is essential for caching: it bounds how stale a cached value can become and ensures memory is reclaimed for entries that are no longer relevant, so the cache does not grow unbounded.
+</p>
+
+<p>
+Choosing a TTL is a trade-off between freshness and database load: a short TTL keeps data fresh but causes more misses and database reads, while a long TTL maximises hit ratio but risks serving stale data. Adding a small random jitter to TTLs also helps prevent many keys expiring at the same instant (a cause of cache stampede).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q37">
+Q37. Redis Eviction Policies
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Examples</h3>
+
+<div class="answer">
+
+<ul>
+<li>LRU</li>
+<li>LFU</li>
+<li>Random</li>
+</ul>
+
+<p>
+When Redis reaches its memory limit, an eviction policy decides which keys to drop to make room. LRU (Least Recently Used) evicts keys that have not been accessed for the longest time, which suits general caching where recent access predicts future access.
+</p>
+
+<p>
+LFU (Least Frequently Used) evicts the keys accessed least often, which is better when some keys are persistently hot regardless of recency. Random eviction is the cheapest but least intelligent. The policy choice matters because the wrong one can evict hot keys and tank the hit ratio.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Senior Engineer Tip</h3>
+
+<p>
+Mention "maxmemory-policy" and the distinction between allkeys-lru and volatile-lru. The "volatile" variants only evict keys that have a TTL set, which lets you protect critical keys (like distributed locks) from eviction while still capping the memory used by cached data. Knowing this configuration detail signals real operational experience with Redis.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h12">SECTION 9 - CACHING STRATEGIES</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q38">
+Q38. Why Cache?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<p>
+Reduce database load and improve response time.
+</p>
+
+<p>
+A cache stores the results of expensive operations close to the application so repeated requests are served from fast memory instead of recomputing or re-querying the database. This both lowers latency for the user and protects the database, which is usually the hardest tier to scale, from being overwhelmed.
+</p>
+
+<p>
+Caching works because most workloads are read-heavy and skewed: a small fraction of data accounts for most reads. By caching that hot data, a high hit ratio offloads the bulk of traffic, letting a modest database handle far more effective throughput. The cost is added complexity around staleness and invalidation.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q39">
+Q39. Cache Aside Pattern
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Most Common Pattern</h3>
+
+<pre>
+
+Check Cache
+
+↓
+
+Miss
+
+↓
+
+Database
+
+↓
+
+Store In Cache
+
+</pre>
+
+<div class="answer">
+
+<p>
+In cache-aside (lazy loading) the application controls the cache directly: it checks the cache first, and on a miss it reads the database, stores the result in the cache, and returns it. Subsequent reads for the same key then hit the cache. This is the most common pattern because only requested data is cached, keeping memory usage efficient.
+</p>
+
+<p>
+Its trade-offs are a first-request penalty (the initial miss pays the full database cost) and the responsibility for invalidation on writes, which the application must handle by evicting or updating the key. It pairs naturally with a TTL so entries eventually refresh even without explicit invalidation.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q40">
+Q40. Write Through Cache
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+Application
+
+↓
+
+Cache
+
+↓
+
+Database
+
+</pre>
+
+<div class="answer">
+
+<p>
+In write-through, every write goes to the cache and the database synchronously as a single operation, so the cache is always consistent with the database. Reads are therefore very likely to hit fresh data, and there is no first-read penalty for recently written keys.
+</p>
+
+<p>
+The cost is write latency, because each write waits for both the cache and the database, and the cache may hold data that is never read again, wasting memory. It suits read-heavy workloads where consistency matters and writes are not the dominant operation.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q41">
+Q41. Write Behind Cache
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+Application
+
+↓
+
+Cache
+
+↓
+
+Database Later
+
+</pre>
+
+<div class="answer">
+
+<p>
+In write-behind (write-back) the application writes to the cache and returns immediately, while the cache asynchronously persists to the database later, often batching multiple writes. This gives very low write latency and high write throughput, which is valuable for write-heavy workloads.
+</p>
+
+<p>
+The serious trade-off is durability: if the cache fails before flushing, recent writes are lost, and the database is temporarily inconsistent with the cache. It is only appropriate when some data loss is acceptable or when the cache itself is made durable, and it is the most operationally risky of the three patterns.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q42">
+Q42. Cache Invalidation
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Removing stale cache entries.
+</p>
+
+<p>
+One of the hardest distributed system problems.
+</p>
+
+<p>
+Invalidation is the act of removing or refreshing a cached value when the underlying data changes, so clients do not keep reading stale data. The common approaches are TTL-based expiry (simple but allows a staleness window), explicit eviction on write (precise but easy to get wrong), and event-driven invalidation through a message bus.
+</p>
+
+<p>
+It is famously hard because in a distributed system there are many caches (per-instance local caches, a shared Redis layer, a CDN) and updates race against reads. Getting it wrong produces either stale data shown to users or thundering herds when too much is invalidated at once. The pragmatic answer is usually TTL plus targeted invalidation on the writes that matter most.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q43">
+Q43. Cache Stampede
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Many requests hit database simultaneously after cache expiry.
+</p>
+
+<p>
+A cache stampede (thundering herd) happens when a popular key expires and, in the brief window before it is repopulated, a flood of concurrent requests all miss the cache and hit the database at once. The database, sized for cache-protected traffic, can be overwhelmed by this sudden surge.
+</p>
+
+<p>
+It is especially dangerous for hot keys and after events that expire many keys simultaneously, such as a cache flush or synchronised TTLs. Because it can cascade into a database outage, interviewers treat awareness of it as a senior signal.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q44">
+Q44. Prevent Cache Stampede
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Distributed Locks</li>
+<li>Cache Warming</li>
+<li>Random TTL</li>
+</ul>
+
+<p>
+A distributed lock ensures only one request rebuilds an expired key while the others wait for or briefly serve the stale value, so the database sees a single recomputation instead of thousands. This is the most direct defence against a stampede on a single hot key.
+</p>
+
+<p>
+Cache warming pre-populates hot keys before they are needed (for example after a deploy), and randomised TTLs (adding jitter) prevent many keys from expiring at the same instant, spreading refreshes over time. Together these techniques keep database load smooth rather than spiky.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h13">SECTION 10 - HIGH AVAILABILITY</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q45">
+Q45. What Is High Availability?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+System remains operational despite failures.
+</p>
+
+<p>
+High availability means the system continues serving users even when individual components fail. It is usually expressed as a percentage of uptime (the "nines"), where, for example, 99.99% availability allows only about 52 minutes of downtime per year. Achieving it requires designing so that no single failure causes an outage.
+</p>
+
+<p>
+The core principle is eliminating single points of failure through redundancy: every critical component has a standby, and traffic automatically shifts away from failed instances. Availability is always a trade-off against cost and, in distributed databases, against consistency (the CAP theorem).
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q46">
+Q46. How To Achieve High Availability?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Redundancy</li>
+<li>Replication</li>
+<li>Load Balancing</li>
+<li>Automatic Failover</li>
+</ul>
+
+<p>
+Redundancy means running multiple instances of every critical component across different machines and ideally different availability zones, so one failure leaves healthy copies. Replication keeps data copied across nodes so the database survives the loss of any single node and reads can be served from replicas.
+</p>
+
+<p>
+Load balancing distributes traffic and health-checks instances, removing failed ones from rotation, while automatic failover promotes a standby (for example a replica to primary) without human intervention. Together these turn component failures into non-events from the user's perspective.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q47">
+Q47. Single Point Of Failure (SPOF)
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A component whose failure causes system outage.
+</p>
+
+<p>
+A single point of failure is any component that has no redundancy, so that its failure takes down the whole system. Identifying and eliminating SPOFs is the central exercise in designing for high availability: you trace every request path and ask "what happens if this one thing dies?"
+</p>
+
+<p>
+The fix is always some form of redundancy plus failover: multiple application instances behind a load balancer, a replicated database with automatic promotion, a Redis cluster instead of a single node, and multiple gateways. The goal is that no individual failure is fatal.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q48">
+Q48. Examples Of SPOF
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Single Database</li>
+<li>Single API Gateway</li>
+<li>Single Redis Node</li>
+<li>Single Application Server</li>
+</ul>
+
+<p>
+A single database is the most dangerous SPOF because it usually holds the source of truth; the mitigation is replication with a standby and automatic failover. A single API gateway funnels all traffic through one node, so it needs to be run redundantly behind a load balancer.
+</p>
+
+<p>
+A single Redis node, if relied on for sessions or rate limiting, can degrade or break the system on failure, so a replicated cluster is used. A single application server is solved simply by running several behind a load balancer. The recurring pattern is: find the lone component, make it plural, and add automatic failover.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h14">SECTION 11 - DATABASE SCALING IN SYSTEM DESIGN</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q49">
+Q49. Read Scaling Strategy
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<pre>
+
+Primary
+
+↓
+
+Replica
+
+Replica
+
+Replica
+
+</pre>
+
+<div class="answer">
+
+<p>
+Read scaling uses read replicas: a primary handles all writes and asynchronously replicates to several read-only replicas, which serve read queries. Because most workloads are read-heavy, distributing reads across replicas dramatically increases read throughput without touching the write path.
+</p>
+
+<p>
+The key trade-off is replication lag: replicas are eventually consistent, so a read immediately after a write may return stale data. The design must route reads that require the latest data to the primary (read-your-writes) and accept eventual consistency for the rest. Caching with Redis is the complementary first line of defence before adding replicas.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q50">
+Q50. Write Scaling Challenges
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<p>
+Much harder than read scaling.
+</p>
+
+<p>
+Writes are harder to scale because every write must update the single source of truth consistently, so you cannot simply add more copies the way you do with read replicas. A single primary eventually becomes a write bottleneck, and replicas do not help because they only serve reads.
+</p>
+
+<p>
+Scaling writes means splitting the data itself across multiple primaries (sharding/partitioning), which introduces cross-shard queries, rebalancing, distributed transactions, and the risk of hot partitions. This added complexity is why a senior answer exhausts caching and read replicas first and only shards when write volume genuinely demands it.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q51">
+Q51. Solutions For Write Scaling
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Sharding</li>
+<li>Partitioning</li>
+<li>CQRS</li>
+</ul>
+
+<p>
+Sharding splits data horizontally across multiple database nodes by a shard key (for example user_id), so writes are spread across independent primaries and each handles a fraction of the load. Partitioning applies the same idea, often within a single database, to keep individual tables and indexes manageable.
+</p>
+
+<p>
+CQRS (Command Query Responsibility Segregation) separates the write model from the read model, letting each be optimised and scaled independently, often with the read side served from a denormalised store or search index. The cost of all three is increased complexity: choosing a good shard key, handling cross-shard joins, and managing eventual consistency.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q52">
+Q52. Hot Partition Problem
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Uneven traffic concentrated on one shard.
+</p>
+
+<p>
+A hot partition occurs when the shard key distributes data or traffic unevenly, so one shard receives a disproportionate share of requests while others sit idle. This defeats the purpose of sharding, because the overloaded shard becomes the new bottleneck and effectively a single point of failure for that data.
+</p>
+
+<p>
+Common causes are a low-cardinality shard key or a naturally skewed access pattern (one celebrity user, one viral job posting). Mitigations include choosing a higher-cardinality or composite shard key, adding a hashing/salting layer to spread hot keys, and caching the hot entity in front of the database so the shard sees fewer reads.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Senior Engineer Perspective</h3>
+
+<p>
+Shard-key selection is the decision that makes or breaks a sharded system, and interviewers probe it deliberately. A strong answer ties the key to the dominant query pattern (so most queries stay within a single shard) while still distributing load evenly. Getting this wrong is expensive to fix later because it requires re-sharding the entire dataset.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h15">SECTION 12 - SEARCH SYSTEMS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q53">
+Q53. Why Elasticsearch/OpenSearch?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Optimized for searching large text datasets.
+</p>
+
+<p>
+Elasticsearch and OpenSearch are built around inverted indexes, a structure that maps each term to the documents containing it. This makes full-text search, relevance ranking, fuzzy and typo-tolerant matching, and faceted filtering fast even across millions of documents, which a relational database cannot do efficiently.
+</p>
+
+<p>
+They also scale horizontally by sharding the index across nodes and replicating shards for availability. The standard pattern keeps the relational database as the system of record and treats the search engine as a derived, query-optimised view kept in sync asynchronously.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q54">
+Q54. Why Not SQL LIKE Queries?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<p>
+Poor performance at large scale.
+</p>
+
+<p>
+A LIKE query with a leading wildcard (for example %java%) cannot use a standard B-tree index, so the database must scan every row. At small data sizes this is fine, but as the table grows the scan time grows linearly and search latency becomes unacceptable.
+</p>
+
+<p>
+LIKE also offers none of the features users expect from search: relevance ranking, typo tolerance, stemming, or scoring. A dedicated search engine handles all of these efficiently through its inverted index, which is why text search is offloaded rather than forced onto SQL pattern matching.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q55">
+Q55. Search Architecture
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+Database
+
+↓
+
+Kafka
+
+↓
+
+Search Index
+
+↓
+
+Search API
+
+</pre>
+
+<div class="answer">
+
+<p>
+The database remains the source of truth. When data changes, an event is published to Kafka, and a consumer applies that change to the search index. The Search API then queries the index rather than the database, so search traffic never touches the primary store.
+</p>
+
+<p>
+This event-driven indexing decouples the two systems: the search cluster can be rebuilt, scaled, or briefly unavailable without affecting writes to the database. The trade-off is eventual consistency, since there is a short delay between a write and its appearance in search, which is almost always acceptable for discovery use cases.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q56">
+Q56. Why Event Driven Index Updates?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<div class="answer">
+
+<p>
+Keeps search system decoupled from primary database.
+</p>
+
+<p>
+Pushing changes through an event stream rather than writing to the index synchronously means the write path is never blocked by, or coupled to, the search cluster's availability or performance. A slow or down search index produces a harmless backlog of events instead of failed user writes.
+</p>
+
+<p>
+It also makes the index rebuildable and additive: you can replay events to reconstruct the index after a schema change, and add new consumers (analytics, recommendations) without modifying the producer. The accepted cost is eventual consistency, which is the standard trade-off for this pattern.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Expected Follow-Up</h3>
+
+<p>
+How do you keep the index in sync if a consumer fails mid-update? The answer is idempotent, replayable consumers: each event is applied in a way that re-processing it produces the same result, and Kafka offsets let the consumer resume from where it stopped. For capturing every change reliably, the Change Data Capture (CDC) pattern (for example via the database's write-ahead log) is the production-grade approach.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h16">PART 2 COMPLETE</h1>
+
+<p>
+
+Next Part:
+
+* CDN
+* API Design
+* Scalability Scenarios
+* System Design Tradeoffs
+* Job Portal Full Design
+* E-Commerce Design
+* Senior Interview Walkthroughs
+* Architecture Decision Making
+
+This is where interviewers evaluate engineering judgment rather than technical knowledge.
+
+</p>
+
+<!-- CONTINUATION OF 13-SYSTEM-DESIGN-FOR-4-YEAR-BACKEND-ENGINEER.html -->
+
+<!-- PART 3 - CDN, API DESIGN, FULL JOB PORTAL DESIGN, SENIOR SYSTEM DESIGN QUESTIONS -->
+
+<hr>
+
+<h1 id="h17">SECTION 13 - CDN (CONTENT DELIVERY NETWORK)</h1>
+
+<p>
+
+CDN questions are common in system design interviews because they touch performance, scalability, and user experience.
+
+</p>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q57">
+Q57. What Is A CDN?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+A geographically distributed network of servers that cache and serve content closer to users.
+</p>
+
+<p>
+A CDN places edge servers in data centres around the world. When a user requests content, they are routed to the nearest edge, which serves a cached copy instead of forcing the request to travel back to a single origin server that might be on another continent. This cuts latency dramatically.
+</p>
+
+<p>
+It is essentially a globally distributed cache for static and cacheable content. The origin remains the source of truth, and the CDN handles invalidation through TTLs and explicit purges, trading a small staleness window for major performance and scalability gains.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q58">
+Q58. Why Use A CDN?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Lower Latency</li>
+<li>Reduced Origin Load</li>
+<li>Improved User Experience</li>
+<li>Higher Availability</li>
+</ul>
+
+<p>
+Lower latency comes from serving content from an edge physically close to the user, which reduces network round-trip time. Reduced origin load follows because the edge absorbs most requests, so the origin servers and their bandwidth are freed for dynamic work.
+</p>
+
+<p>
+This translates directly into a better user experience (faster page loads, smoother media) and higher availability, since the CDN can keep serving cached content even if the origin is temporarily degraded, and it absorbs traffic spikes that would otherwise overwhelm the origin.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q59">
+Q59. What Content Should Use CDN?
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Images</li>
+<li>Videos</li>
+<li>JavaScript</li>
+<li>CSS</li>
+<li>Documents</li>
+</ul>
+
+<p>
+The ideal CDN candidates are static, cacheable assets that are identical for all users: images, video, JavaScript, CSS, and downloadable documents. These change infrequently and are requested by many users, so caching them at the edge yields a high hit ratio.
+</p>
+
+<p>
+Highly dynamic or personalised content (a user's private dashboard) is generally not cached at the CDN, though modern CDNs can cache it briefly or use edge logic. The principle is to push everything static and shared to the edge and let the origin focus on dynamic, per-user responses.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q60">
+Q60. CDN Flow
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+User
+
+↓
+
+Nearest CDN Edge
+
+↓
+
+Cache Hit?
+
+↓
+
+Yes → Return Content
+
+No → Origin Server
+
+</pre>
+
+<div class="answer">
+
+<p>
+The user's request is routed to the nearest edge server. If the edge has the content cached and unexpired (a cache hit), it returns it immediately without contacting the origin. This is the fast, common path that delivers the CDN's latency and load benefits.
+</p>
+
+<p>
+On a cache miss, the edge fetches the content from the origin, serves it to the user, and stores a copy locally so subsequent requests in that region become hits. TTLs control how long the edge keeps content before re-validating with the origin, balancing freshness against origin load.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h18">SECTION 14 - API DESIGN</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q61">
+Q61. REST API Design Principles
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Resource Oriented</li>
+<li>Stateless</li>
+<li>Consistent Naming</li>
+<li>HTTP Standards</li>
+<li>Versioning</li>
+</ul>
+
+<p>
+REST models the API around resources (nouns like jobs and applications) addressed by URIs, with HTTP methods expressing the action. Statelessness means each request carries everything needed to process it, which is what lets any server handle any request and underpins horizontal scaling.
+</p>
+
+<p>
+Consistent naming and adherence to HTTP standards (correct status codes, proper use of GET/POST/PUT/DELETE) make the API predictable and self-describing, while versioning protects existing clients when the contract evolves. Together these principles produce APIs that are easy to consume, cache, scale, and change safely.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q62">
+Q62. Good Endpoint Design
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Good</h3>
+
+<pre>
+
+/api/v1/jobs
+
+/api/v1/jobs/{id}
+
+/api/v1/applications
+
+</pre>
+
+<h3>Bad</h3>
+
+<pre>
+
+/getJobs
+
+/createJob
+
+/deleteJob
+
+</pre>
+
+<div class="answer">
+
+<p>
+Good endpoints are resource-oriented: the URL names a noun (/jobs, /jobs/{id}) and the HTTP method conveys the verb (GET to read, POST to create, DELETE to remove). This keeps the surface small and consistent, and lets infrastructure like caches and gateways reason about requests correctly.
+</p>
+
+<p>
+The "bad" examples encode the action into the URL (/getJobs, /createJob), which is RPC-style rather than REST. It bloats the API with one endpoint per action, breaks the uniform interface, and confuses caching since a GET-style action might be issued as a POST. Sticking to nouns plus standard methods is what makes an API intuitive.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q63">
+Q63. API Versioning Strategies
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+<ul>
+<li>URI Versioning</li>
+<li>Header Versioning</li>
+<li>Query Parameter Versioning</li>
+</ul>
+</div>
+
+<h3>Most Common</h3>
+
+<pre>
+
+/api/v1/jobs
+
+</pre>
+
+<div class="answer">
+
+<p>
+URI versioning (/api/v1/jobs) is the most common because it is explicit, easy to route, easy to test in a browser, and unambiguous in logs. Header versioning keeps URLs clean by selecting the version through a custom header, and query-parameter versioning passes it as ?version=1.
+</p>
+
+<p>
+Versioning exists so the contract can evolve without breaking existing clients: you introduce v2 alongside v1 and migrate consumers gradually. The trade-off across strategies is cleanliness of the URL versus visibility and ease of routing, and URI versioning usually wins on operability.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q64">
+Q64. Idempotent HTTP Methods
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>Method</th>
+<th>Idempotent?</th>
+</tr>
+
+<tr>
+<td>GET</td>
+<td>Yes</td>
+</tr>
+
+<tr>
+<td>PUT</td>
+<td>Yes</td>
+</tr>
+
+<tr>
+<td>DELETE</td>
+<td>Yes</td>
+</tr>
+
+<tr>
+<td>POST</td>
+<td>No</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+An idempotent method produces the same result whether it is called once or many times. GET only reads, so it changes nothing. PUT replaces a resource with a given representation, so repeating it leaves the same final state. DELETE removes a resource, and deleting it again leaves it deleted.
+</p>
+
+<p>
+POST is not idempotent because it typically creates a new resource each time, so two identical POSTs create two records. This matters under retries and network failures: a client can safely retry GET, PUT, and DELETE, but must guard POST with an idempotency key so a retried "apply to job" does not create a duplicate application.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q65">
+Q65. Pagination API Example
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<pre>
+
+/jobs?page=1&size=20
+
+</pre>
+
+<div class="answer">
+
+<p>
+Pagination returns results in bounded pages instead of all at once, which protects both the server and the client from huge responses. Offset pagination (page and size) is simple and shown here, but its weakness is that deep pages get slow, because the database must skip all preceding rows.
+</p>
+
+<p>
+For large or frequently-changing datasets, cursor-based (keyset) pagination is preferred: the client passes the last-seen key and the server fetches the next slice using an indexed range, which stays fast at any depth and avoids items shifting between pages as data changes. Mentioning this trade-off is a senior signal.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q66">
+Q66. Filtering API Example
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+/jobs?location=kolkata
+
+/jobs?skill=java
+
+/jobs?salary=1000000
+
+</pre>
+
+<div class="answer">
+
+<p>
+Filtering is expressed through query parameters on the collection resource, keeping the URL readable and the parameters composable (location, skill, and salary can be combined). The server translates these into indexed query conditions, which is why the underlying columns should be indexed to keep filtered reads fast.
+</p>
+
+<p>
+At scale, complex multi-field filtering and free-text search are usually pushed to a search engine rather than answered by SQL, as discussed in the search section. For structured filters on a relational store, well-chosen composite indexes keep these endpoints performant.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h19">SECTION 15 - COMPLETE JOB PORTAL DESIGN</h1>
+
+<p>
+
+This section is extremely relevant to your background.
+
+Master this thoroughly.
+
+</p>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q67">
+Q67. Design A Scalable Job Portal
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Requirements</h3>
+
+<div class="answer">
+
+<ul>
+<li>User Registration</li>
+<li>Job Posting</li>
+<li>Job Search</li>
+<li>Apply To Job</li>
+<li>Resume Upload</li>
+<li>Notifications</li>
+</ul>
+
+<p>
+Start by separating functional requirements (the features above) from non-functional ones (scalability, availability, low-latency search, durability of resumes). A strong answer clarifies scale up front: roughly how many users, jobs, and searches per second, since those numbers drive the database, cache, and search decisions.
+</p>
+
+<p>
+Each requirement maps to a design choice made later in this section: search to a dedicated index, resume upload to object storage, notifications to an async event pipeline, and apply-to-job to a transactional constraint. Framing it this way shows the interviewer structured thinking rather than jumping straight to boxes and arrows.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q68">
+Q68. High-Level Architecture
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<pre>
+
+Frontend
+
+↓
+
+API Gateway
+
+↓
+
+User Service
+
+Job Service
+
+Application Service
+
+Notification Service
+
+Search Service
+
+</pre>
+
+<div class="answer">
+
+<p>
+The frontend talks to a single API Gateway, which handles cross-cutting concerns: authentication, rate limiting, routing, and request aggregation. Behind it sit services split by business domain, each owning its own data and able to scale independently based on its specific load profile.
+</p>
+
+<p>
+This layout lets the read-heavy Search Service scale separately from the write-heavy Application Service, and lets the Notification Service work asynchronously off an event stream. For a team of moderate size, the same boundaries can begin life as modules in a single deployable (a modular monolith) and be extracted into separate services as scale and team structure demand.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q69">
+Q69. Database Choice
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+PostgreSQL
+
+</pre>
+
+<div class="answer">
+
+<p>
+Reason: Strong consistency. Relational data. Complex filtering.
+</p>
+
+<p>
+The core entities (users, jobs, applications, recruiters) are highly relational and require transactional integrity, for example to guarantee one application per user per job. PostgreSQL provides ACID transactions, foreign keys, mature indexing, and a strong query planner for the multi-condition filters job listings require.
+</p>
+
+<p>
+It scales for this domain through read replicas for read traffic and, only if write volume truly demands it, sharding by a sensible key. Reaching for NoSQL here would trade away the consistency and relational guarantees that this data fundamentally needs.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q70">
+Q70. Resume Storage
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<pre>
+
+AWS S3
+
+</pre>
+
+<div class="answer">
+
+<p>
+Store URL in database.
+</p>
+
+<p>
+Resumes are large binary files, so they belong in object storage like S3, not in the database. S3 gives high durability, cheap virtually unlimited capacity, and CDN integration, while the database stores only the metadata and the S3 URL/key needed to locate and authorise access to the file.
+</p>
+
+<p>
+Uploads should go directly to S3 via pre-signed URLs so the application server never has to stream large files, keeping it lightweight and scalable. This separation of bytes (S3) from references (PostgreSQL) is the standard pattern for any file-handling feature.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q71">
+Q71. Search Architecture
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<pre>
+
+Job Created
+
+↓
+
+Kafka
+
+↓
+
+Search Index
+
+↓
+
+OpenSearch
+
+</pre>
+
+<div class="answer">
+
+<p>
+When a job is created or updated, the Job Service publishes an event to Kafka. A consumer reads that event and updates the OpenSearch index, so search queries hit a structure optimised for full-text relevance and filtering rather than the transactional database.
+</p>
+
+<p>
+This event-driven indexing decouples search from the write path: OpenSearch can be rebuilt or scaled independently, and an indexing delay only means a new job appears in search a moment later (eventual consistency), which is acceptable. PostgreSQL stays the source of truth while OpenSearch serves discovery.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q72">
+Q72. Cache Strategy
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>Popular Jobs</li>
+<li>Featured Jobs</li>
+<li>Company Profiles</li>
+</ul>
+
+<p>
+The caching targets are read-heavy, slowly-changing, and widely-shared data: popular and featured jobs and company profiles. Caching these in Redis with the cache-aside pattern and a TTL yields a high hit ratio and removes the bulk of repetitive reads from PostgreSQL.
+</p>
+
+<p>
+Because this data changes occasionally, the design relies on TTL-based freshness plus targeted invalidation when a company or featured listing is updated. Personalised or rapidly-changing data (a specific user's application list) is generally not cached, since it would have a low hit ratio and high invalidation churn.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q73">
+Q73. Prevent Duplicate Applications
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<pre>
+
+UNIQUE(user_id, job_id)
+
+</pre>
+
+<div class="answer">
+
+<p>
+A composite unique constraint on (user_id, job_id) enforces one application per user per job at the database level, which is the only reliable place to guarantee it under concurrency. A racing double-click or retried request is rejected by the constraint rather than slipping through an application-level check.
+</p>
+
+<p>
+The application catches the unique-violation and returns a clean "already applied" response. This pushes the correctness guarantee down to where consistency is enforced, instead of depending on read-then-write logic that two concurrent requests could both pass.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q74">
+Q74. Notification Design
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<pre>
+
+Application Submitted
+
+↓
+
+Kafka Event
+
+↓
+
+Notification Service
+
+↓
+
+Email
+
+SMS
+
+Push
+
+</pre>
+
+<div class="answer">
+
+<p>
+Submitting an application publishes a Kafka event and returns immediately, so the user is never blocked waiting on email or SMS delivery. The Notification Service consumes the event asynchronously and fans it out to the appropriate channels based on user preferences.
+</p>
+
+<p>
+Because delivery runs off a durable queue, a provider outage causes a retryable backlog rather than a user-facing error, and the service applies retries with backoff, idempotency to avoid duplicate sends, and a dead-letter queue for messages that repeatedly fail. This keeps the core apply flow fast and reliable.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q75">
+Q75. Security Design
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<div class="answer">
+
+<ul>
+<li>JWT</li>
+<li>Refresh Tokens</li>
+<li>RBAC</li>
+<li>Rate Limiting</li>
+<li>HTTPS</li>
+</ul>
+
+<p>
+JWTs provide stateless authentication so any service can validate a request without a shared session store, which is essential for horizontal scaling. Short-lived access tokens are paired with longer-lived refresh tokens so a leaked access token has a small blast radius while users are not forced to log in constantly.
+</p>
+
+<p>
+RBAC enforces that job seekers, recruiters, and admins can only perform their permitted actions, and is checked at the gateway and service layer. Rate limiting protects against abuse and brute-force attempts, and HTTPS encrypts all traffic in transit. Together these form defence in depth rather than relying on any single control.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h20">SECTION 16 - SENIOR DESIGN SCENARIOS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q76">
+Q76. Job Search Suddenly Becomes Slow
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Senior Favorite
+</p>
+
+<h3>Investigation</h3>
+
+<div class="answer">
+
+<ol>
+<li>Database Queries</li>
+<li>Index Usage</li>
+<li>Search Cluster Health</li>
+<li>Cache Hit Ratio</li>
+<li>Network Latency</li>
+</ol>
+
+<p>
+The value of this question is the structured investigation, not a single root cause. You work from the most likely and cheapest-to-check causes outward: are slow queries appearing, are indexes still being used (or did a query plan regress), is the search cluster healthy and not rebalancing, has the cache hit ratio dropped, and is there a network or downstream latency spike.
+</p>
+
+<p>
+A senior engineer also anchors the investigation in observability: dashboards, slow-query logs, APM traces, and metrics tell you where time is actually being spent rather than guessing. The interviewer is checking that you reason methodically under pressure instead of jumping to a fix.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q77">
+Q77. Redis Goes Down
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Expected Answer</h3>
+
+<div class="answer">
+
+<p>
+System should continue working.
+</p>
+
+<p>
+Performance decreases.
+</p>
+
+<p>
+Database becomes fallback source.
+</p>
+
+<p>
+Redis is a cache, not the source of truth, so its failure should degrade performance rather than cause an outage. The application falls back to reading from the database, accepting higher latency and load until Redis recovers. This is the graceful-degradation principle interviewers want to hear.
+</p>
+
+<p>
+The risk is that with the cache gone, full traffic hits the database at once, which can overwhelm it (a stampede). Mitigations include a replicated Redis cluster to avoid a single point of failure, circuit breakers and timeouts so a slow Redis does not block requests, and load shedding to protect the database while the cache is rebuilt.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q78">
+Q78. Kafka Goes Down
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Asynchronous features impacted.
+</p>
+
+<ul>
+<li>Notifications Delayed</li>
+<li>Search Updates Delayed</li>
+<li>Core APIs Should Continue</li>
+</ul>
+
+<p>
+Because Kafka backs only the asynchronous pipelines, its failure delays notifications and search index updates but should not break the synchronous core APIs like login, job posting, or applying. This is the benefit of decoupling: the user-facing path does not depend on the event bus being up.
+</p>
+
+<p>
+Once Kafka recovers, the backlog is processed and the system catches up, since events were either buffered or are re-published. In production Kafka itself is run as a replicated cluster to make this scenario rare, and producers handle brief outages with retries or local buffering so events are not lost.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q79">
+Q79. Database Goes Down
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Answer</h3>
+
+<div class="answer">
+
+<p>
+Critical outage.
+</p>
+
+<p>
+Unlike Redis or Kafka, the database holds the source of truth, so its loss is a critical outage: writes fail and most reads cannot be served correctly. This is why the database is the SPOF that most deserves redundancy and why protecting it shapes much of the architecture.
+</p>
+
+</div>
+
+<h3>Mitigation</h3>
+
+<div class="answer">
+
+<ul>
+<li>Replication</li>
+<li>Failover</li>
+<li>Backups</li>
+<li>Disaster Recovery</li>
+</ul>
+
+<p>
+Replication keeps synchronised standbys so a replica can be promoted, and automatic failover does that promotion quickly to minimise downtime. Regular, tested backups guard against data corruption and accidental deletion, which replication alone does not, since corruption replicates too.
+</p>
+
+<p>
+A disaster recovery plan with a secondary region, plus defined RPO (how much data loss is tolerable) and RTO (how fast you must recover), turns "the database is down" from a catastrophe into a rehearsed procedure. Mentioning RPO/RTO signals senior-level operational maturity.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q80">
+Q80. System Receives 10x Traffic
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Scaling Plan</h3>
+
+<div class="answer">
+
+<ul>
+<li>More Application Instances</li>
+<li>Redis Scaling</li>
+<li>Read Replicas</li>
+<li>CDN</li>
+<li>Load Balancer</li>
+</ul>
+
+<p>
+Because the application tier is stateless, the first lever is horizontal scaling: add more instances behind the load balancer, ideally via auto-scaling that reacts to load. A CDN offloads static content at the edge, and Redis absorbs read traffic so the database is shielded from the surge.
+</p>
+
+<p>
+On the data tier, read replicas scale read throughput; if writes become the bottleneck, sharding is the next step, with its added complexity. The senior framing is to apply the cheap, high-leverage changes first (scale out, cache, CDN, replicas) and reach for the complex ones (sharding, CQRS) only when the simpler measures are exhausted.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h21">SECTION 17 - ARCHITECTURE TRADEOFF QUESTIONS</h1>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q81">
+Q81. SQL vs NoSQL
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<table border="1">
+
+<tr>
+<th>SQL</th>
+<th>NoSQL</th>
+</tr>
+
+<tr>
+<td>ACID</td>
+<td>Flexible Schema</td>
+</tr>
+
+<tr>
+<td>Strong Consistency</td>
+<td>Horizontal Scaling</td>
+</tr>
+
+</table>
+
+<h3>Job Portal Choice</h3>
+
+<div class="answer">
+
+<p>
+SQL.
+</p>
+
+<p>
+SQL databases offer ACID transactions, strong consistency, and rich relational joins, which fit data with clear relationships and integrity requirements. NoSQL trades some of that away for a flexible schema and easier horizontal scaling, which suits massive scale, high write volume, or loosely-structured data.
+</p>
+
+<p>
+For the job portal the choice is SQL, because the data is relational and consistency matters (no duplicate applications, accurate ownership). The honest senior answer is that it is not "SQL is better" but "match the store to the access pattern and consistency needs", and many large systems use both (polyglot persistence) for different parts.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q82">
+Q82. Monolith vs Microservices
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: Extremely High
+</p>
+
+<h3>Interview Gold Answer</h3>
+
+<div class="answer">
+
+<p>
+Start with modular monolith.
+</p>
+
+<p>
+Move to microservices when justified.
+</p>
+
+</div>
+
+<div class="followup">
+
+<h3>Interview Gold Point</h3>
+
+<p>
+A modular monolith gives you clear domain boundaries inside a single deployable, so you get most of the design benefits without the operational cost. Microservices add real overhead: network latency between calls, distributed transactions, service discovery, distributed tracing, and far more deployment and monitoring complexity. The mature answer is to defer that complexity until team size, independent scaling needs, or release cadence genuinely justify it. Saying "I would start with a modular monolith and extract services when there is a concrete reason" signals seniority far more than reflexively reaching for microservices.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q83">
+Q83. Redis vs Database
+</div>
+
+<p class="roi">
+ROI: ★★★★★
+Frequency: High
+</p>
+
+<table border="1">
+
+<tr>
+<th>Redis</th>
+<th>Database</th>
+</tr>
+
+<tr>
+<td>Fast</td>
+<td>Durable</td>
+</tr>
+
+<tr>
+<td>Cache</td>
+<td>Source Of Truth</td>
+</tr>
+
+</table>
+
+<div class="answer">
+
+<p>
+Redis and the database are complementary, not competing. Redis is an in-memory cache: extremely fast but volatile, used to serve hot data and reduce load. The database is durable and is the source of truth, holding the authoritative, persistent state the system relies on.
+</p>
+
+<p>
+The design principle is that Redis can fail without data loss, because everything in it is reconstructable from the database, whereas the database failing is a true outage. You therefore never treat the cache as authoritative, and you size each for its role: the database for durability and consistency, Redis for speed.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q84">
+Q84. Most Asked System Design Questions
+</div>
+
+<p class="roi">
+ROI: Reality Check
+★★★★★
+</p>
+
+<div class="answer">
+
+<ol>
+<li>Rate Limiter</li>
+<li>URL Shortener</li>
+<li>Notification System</li>
+<li>Job Portal</li>
+<li>Chat Application</li>
+<li>Caching Strategy</li>
+<li>Load Balancing</li>
+<li>Database Scaling</li>
+<li>Search System</li>
+<li>High Availability</li>
+</ol>
+
+<p>
+These recur because each one exercises a distinct fundamental: rate limiting tests distributed counters and atomicity, URL shortener tests read-heavy caching and ID generation, notification systems test async decoupling and idempotency, and so on. Mastering this short list covers the building blocks that every larger design recombines.
+</p>
+
+<p>
+For a 4-year backend engineer the realistic expectation is not a Google-scale design but a clear, well-reasoned solution to one of these, with explicit trade-offs. Practising them end to end, including the follow-up grilling, is the highest-leverage preparation.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="section">
+
+<div class="question" id="q85">
+Q85. If You Remember Only 10 System Design Concepts
+</div>
+
+<p class="roi">
+ROI: Maximum
+★★★★★
+</p>
+
+<div class="answer">
+
+<ol>
+<li>Load Balancer</li>
+<li>Redis Cache</li>
+<li>API Gateway</li>
+<li>Database Replication</li>
+<li>Kafka</li>
+<li>CDN</li>
+<li>Rate Limiting</li>
+<li>Horizontal Scaling</li>
+<li>High Availability</li>
+<li>Tradeoffs</li>
+</ol>
+
+<p>
+These ten are the vocabulary of almost every system design discussion: a load balancer plus horizontal scaling for the application tier, Redis and a CDN for caching, database replication for read scaling and availability, Kafka for async decoupling, an API gateway for cross-cutting concerns, and rate limiting for protection.
+</p>
+
+<p>
+The tenth, trade-offs, is the most important and the one interviewers actually score. Knowing the components is table stakes; explaining why you chose one over another, and what you gave up, is what distinguishes a senior engineer. Every concept above is a lever, and good design is choosing the right levers for the specific constraints.
+</p>
+
+</div>
+
+</div>
+
+<hr>
+
+<h1 id="h22">SYSTEM DESIGN FILE COMPLETE</h1>
+
+<h2>Topics Covered</h2>
+
+<ul>
+
+<li>URL Shortener</li>
+<li>Rate Limiter</li>
+<li>Notification System</li>
+<li>Chat System</li>
+<li>File Storage</li>
+<li>Job Portal Design</li>
+<li>Load Balancing</li>
+<li>Redis</li>
+<li>Caching</li>
+<li>High Availability</li>
+<li>Search Systems</li>
+<li>CDN</li>
+<li>API Design</li>
+<li>Scalability</li>
+<li>Architecture Tradeoffs</li>
+
+</ul>
+
+</body>
+</html>

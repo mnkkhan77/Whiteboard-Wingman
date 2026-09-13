@@ -1,0 +1,16 @@
+# Used by @ActiveProfiles("test") in controller/integration tests — in-memory H2, isolated per run.
+# Schema comes entirely from the Flyway migrations (db/migration), same as dev/prod — ddl-auto is
+# validate-only so a test run also catches an entity/migration drift, not just app code bugs.
+spring:
+  datasource:
+    url: jdbc:h2:mem:mockinterview-test;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.H2Dialect
+  flyway:
+    placeholders:
+      clob_type: CLOB

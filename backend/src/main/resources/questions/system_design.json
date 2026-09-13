@@ -1,0 +1,17 @@
+[
+  {"id": "sd-e1", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is the difference between vertical and horizontal scaling?"},
+  {"id": "sd-e2", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is a load balancer, and why would a system need one?"},
+  {"id": "sd-e3", "difficulty": "EASY", "questionType": "CONCEPTUAL", "promptText": "What is the difference between a SQL and a NoSQL database, and when would you choose each?"},
+  {"id": "sd-mcq1", "difficulty": "EASY", "questionType": "MCQ", "promptText": "What is the primary purpose of a load balancer?",
+    "options": ["Encrypt traffic between services", "Distribute incoming requests across multiple servers", "Cache database query results", "Compress HTTP responses"], "correctOptionIndex": 1,
+    "explanation": "A load balancer distributes incoming traffic across multiple backend instances to improve availability and handle more load than a single server could."},
+  {"id": "sd-m1", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "Design a URL shortener service. Walk through the data model and how you'd generate short codes at scale."},
+  {"id": "sd-m2", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "What is a message queue, and how would you use one to decouple a resume-upload feature from a slow AI analysis step?"},
+  {"id": "sd-m3", "difficulty": "MEDIUM", "questionType": "CONCEPTUAL", "promptText": "Explain the CAP theorem and how it applies to choosing a database for a distributed system."},
+  {"id": "sd-mcq2", "difficulty": "MEDIUM", "questionType": "MCQ", "promptText": "Which strategy best helps reduce read load on a primary database?",
+    "options": ["Vertical scaling only", "Read replicas", "Removing all indexes", "Increasing connection pool size indefinitely"], "correctOptionIndex": 1,
+    "explanation": "Read replicas let read-heavy traffic be served from replicated copies, offloading the primary database which continues handling writes."},
+  {"id": "sd-h1", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "Design a rate limiter for a public API that must work correctly across multiple server instances."},
+  {"id": "sd-h2", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "Design the backend for a live, adaptive mock-interview platform: what are the key components, and where would you introduce caching or async processing to keep it responsive under load?"},
+  {"id": "sd-h3", "difficulty": "HARD", "questionType": "CONCEPTUAL", "promptText": "How would you design a system to ingest and search over a large, growing set of documents, keeping retrieval both fast and relevant as the corpus grows?"}
+]
