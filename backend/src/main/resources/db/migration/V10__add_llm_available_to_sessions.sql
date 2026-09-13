@@ -1,0 +1,1 @@
+ALTER TABLE interview_sessions ADD COLUMN llm_available BOOLEAN NOT NULL DEFAULT TRUE;

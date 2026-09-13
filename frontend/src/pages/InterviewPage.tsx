@@ -1,0 +1,411 @@
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useApiKey } from "../context/ApiKeyContext";
+import { Navbar } from "../components/Navbar";
+import { Footer } from "../components/Footer";
+import { completeSession, getResumeState, startNextSection, submitAnswer } from "../api/sessions";
+import { ApiError } from "../api/client";
+import { CodeEditorPane } from "../components/CodeEditorPane";
+import { MicButton } from "../components/MicButton";
+import { RunCodePanel } from "../components/RunCodePanel";
+import type { EvaluationResult, ProgressResponse, QuestionResponse, QuestionType } from "../types/api";
+
+type Phase = "AWAITING_ANSWER" | "SUBMITTING" | "SHOWING_FEEDBACK" | "FINISHING";
+
+interface LocationState {
+  firstQuestion: QuestionResponse;
+  targetQuestionCount: number;
+}
+
+const QUESTION_TYPE_LABEL: Record<QuestionType, string> = {
+  CONCEPTUAL: "Verbal",
+  MCQ: "Multiple Choice",
+  CODING: "Live Coding",
+};
+
+const ROUND_ORDER: QuestionType[] = ["CONCEPTUAL", "MCQ", "CODING"];
+
+function scoreTier(score: number): "good" | "mid" | "poor" {
+  if (score >= 80) return "good";
+  if (score >= 50) return "mid";
+  return "poor";
+}
+
+export default function InterviewPage() {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { token } = useAuth();
+  const { apiKey, provider, model } = useApiKey();
+
+  const locationState = location.state as LocationState | null;
+  const numericSessionId = sessionId ? Number(sessionId) : NaN;
+
+  const [question, setQuestion] = useState<QuestionResponse | null>(locationState?.firstQuestion ?? null);
+  const [progress, setProgress] = useState<ProgressResponse>({
+    current: 0,
+    total: locationState?.targetQuestionCount ?? 0,
+  });
+  const [loading, setLoading] = useState(!locationState);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>("AWAITING_ANSWER");
+  const [answerText, setAnswerText] = useState("");
+  const [code, setCode] = useState("");
+  const [codeLanguage, setCodeLanguage] = useState("java");
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
+  const [isLastQuestion, setIsLastQuestion] = useState(false);
+  const [sectionComplete, setSectionComplete] = useState(false);
+  const [nextSectionType, setNextSectionType] = useState<QuestionType | null>(null);
+  const [completedRounds, setCompletedRounds] = useState<Set<QuestionType>>(new Set());
+  const [sectionTransitionLoading, setSectionTransitionLoading] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Guards against a slow initial resume-fetch resolving after the user has already answered and
+  // moved on (e.g. a fast reply on a slow connection) — it must not clobber newer client state.
+  const hasSubmittedRef = useRef(false);
+
+  const isCoding = question?.questionType === "CODING";
+  const isMcq = question?.questionType === "MCQ";
+  const canSubmit = isMcq
+    ? selectedOption !== null
+    : isCoding
+      ? code.trim().length > 0 || answerText.trim().length > 0
+      : answerText.trim().length > 0;
+
+  // A lightweight integrity signal, not an enforcement mechanism — nothing blocks on it, it's just
+  // recorded on the final report so the candidate (or whoever reviews it) knows how focused the
+  // session was.
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        setTabSwitchCount((c) => c + 1);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    if (!token || Number.isNaN(numericSessionId)) return;
+    getResumeState(token, numericSessionId)
+      .then((res) => {
+        if (hasSubmittedRef.current) return;
+        if (res.status === "COMPLETED") {
+          navigate(`/sessions/${numericSessionId}/report`, { replace: true });
+          return;
+        }
+        if (res.currentQuestion) {
+          setQuestion(res.currentQuestion);
+          setPhase("AWAITING_ANSWER");
+        } else if (res.pendingSectionType) {
+          setSectionComplete(true);
+          setNextSectionType(res.pendingSectionType);
+          setPhase("SHOWING_FEEDBACK");
+        }
+        setProgress(res.progress);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoadError(err instanceof ApiError ? err.message : "Could not load this interview.");
+        setLoading(false);
+      });
+    // Deliberately runs once per session id — subsequent progress comes from client-driven
+    // submit/next actions, not repeated polling.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numericSessionId, token]);
+
+  if (loadError) {
+    return (
+      <>
+        <Navbar />
+        <div className="page">
+          <p className="error-text">{loadError}</p>
+          <Link to="/">Back to dashboard</Link>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (loading || !question) {
+    return (
+      <>
+        <Navbar />
+        <div className="page">
+          <p>Loading interview...</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!token || Number.isNaN(numericSessionId)) return;
+    hasSubmittedRef.current = true;
+    setError(null);
+    setPhase("SUBMITTING");
+    try {
+      const res = await submitAnswer(
+        { token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined },
+        numericSessionId,
+        answerText,
+        code || undefined,
+        isCoding ? codeLanguage : undefined,
+        isMcq ? selectedOption ?? undefined : undefined
+      );
+      setEvaluation(res.evaluation);
+      setProgress(res.progress);
+      setIsLastQuestion(res.sessionStatus === "COMPLETED");
+      setSectionComplete(res.sectionComplete);
+      setNextSectionType(res.nextSectionType);
+      if (res.sectionComplete && question) {
+        setCompletedRounds((prev) => new Set(prev).add(question.questionType));
+      }
+      if (res.nextQuestion) setQuestion(res.nextQuestion);
+      setPhase("SHOWING_FEEDBACK");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not submit your answer. Please try again.");
+      setPhase("AWAITING_ANSWER");
+    }
+  }
+
+  async function handleNext() {
+    setAnswerText("");
+    setCode("");
+    setSelectedOption(null);
+    setEvaluation(null);
+    setPhase("AWAITING_ANSWER");
+  }
+
+  async function handleStartNextSection() {
+    if (!token || Number.isNaN(numericSessionId)) return;
+    setSectionTransitionLoading(true);
+    setError(null);
+    try {
+      if (question) {
+        setCompletedRounds((prev) => new Set(prev).add(question.questionType));
+      }
+      const next = await startNextSection(token, numericSessionId);
+      setQuestion(next);
+      setAnswerText("");
+      setCode("");
+      setSelectedOption(null);
+      setEvaluation(null);
+      setSectionComplete(false);
+      setNextSectionType(null);
+      setPhase("AWAITING_ANSWER");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not start the next section. Please try again.");
+    } finally {
+      setSectionTransitionLoading(false);
+    }
+  }
+
+  async function handleFinish() {
+    if (!token || Number.isNaN(numericSessionId)) return;
+    setPhase("FINISHING");
+    setError(null);
+    try {
+      await completeSession(
+        { token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined },
+        numericSessionId,
+        tabSwitchCount
+      );
+      navigate(`/sessions/${numericSessionId}/report`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not generate the report. Please try again.");
+      setPhase("SHOWING_FEEDBACK");
+    }
+  }
+
+  return (
+    <>
+      <Navbar />
+      <div className="page">
+        <div className="progress-bar">
+          <div className="progress-bar-fill" style={{ width: `${(progress.current / Math.max(progress.total, 1)) * 100}%` }} />
+        </div>
+        <p className="progress-label">
+          Question {Math.min(progress.current + 1, progress.total)} of {progress.total}
+        </p>
+
+        <div className="round-stepper">
+          {ROUND_ORDER.map((type, i) => {
+            const status = completedRounds.has(type)
+              ? "completed"
+              : type === question.questionType
+                ? "current"
+                : "upcoming";
+            return (
+              <div key={type} className={`round-step round-step-${status}`}>
+                <span className="round-step-marker">{status === "completed" ? "✓" : i + 1}</span>
+                <span className="round-step-label">{QUESTION_TYPE_LABEL[type]}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {tabSwitchCount > 0 && (
+          <p className="tab-switch-warning">
+            ⚠ Tab switch detected {tabSwitchCount > 1 ? `${tabSwitchCount} times` : "once"} — staying on this tab keeps your practice realistic.
+          </p>
+        )}
+
+        <div className="card">
+          <div className="question-card-header">
+            <span className={`difficulty-badge difficulty-${question.difficulty.toLowerCase()}`}>{question.difficulty}</span>
+            <span className={`type-badge type-${question.questionType.toLowerCase()}`}>{QUESTION_TYPE_LABEL[question.questionType]}</span>
+          </div>
+          <p className="question-text">{question.promptText}</p>
+
+          {phase !== "SHOWING_FEEDBACK" && phase !== "FINISHING" ? (
+            <form onSubmit={handleSubmit}>
+              {isMcq ? (
+                <div className="mcq-options" role="radiogroup" aria-label="Answer options">
+                  {question.options.map((opt, i) => (
+                    <label key={i} className={selectedOption === i ? "mcq-option selected" : "mcq-option"}>
+                      <input
+                        type="radio"
+                        name="mcq-option"
+                        checked={selectedOption === i}
+                        onChange={() => setSelectedOption(i)}
+                        disabled={phase === "SUBMITTING"}
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : isCoding ? (
+                <>
+                  <p className="live-coding-hint">Live coding round — write your solution below.</p>
+                  {question.ioFormat && <p className="io-format-hint">{question.ioFormat}</p>}
+                  <CodeEditorPane
+                    value={code}
+                    onChange={setCode}
+                    language={codeLanguage}
+                    onLanguageChange={setCodeLanguage}
+                    disabled={phase === "SUBMITTING"}
+                    label="Your solution"
+                    height="320px"
+                  />
+                  {question.testCases.length > 0 && token && (
+                    <RunCodePanel
+                      key={question.id}
+                      token={token}
+                      questionId={question.id}
+                      language={codeLanguage}
+                      code={code}
+                      disabled={phase === "SUBMITTING"}
+                    />
+                  )}
+                  <label>
+                    Notes <span className="hint">(optional — briefly explain your approach)</span>
+                    <textarea
+                      value={answerText}
+                      onChange={(e) => setAnswerText(e.target.value)}
+                      rows={3}
+                      disabled={phase === "SUBMITTING"}
+                    />
+                  </label>
+                </>
+              ) : (
+                <label>
+                  <span className="answer-label-row">
+                    Your answer
+                    <MicButton onTranscript={(text) => setAnswerText((prev) => (prev ? `${prev} ${text}` : text))} disabled={phase === "SUBMITTING"} />
+                  </span>
+                  <textarea
+                    value={answerText}
+                    onChange={(e) => setAnswerText(e.target.value)}
+                    rows={6}
+                    required
+                    disabled={phase === "SUBMITTING"}
+                  />
+                </label>
+              )}
+
+              {error && <p className="error-text">{error}</p>}
+
+              <button type="submit" className="primary" disabled={phase === "SUBMITTING" || !canSubmit}>
+                {phase === "SUBMITTING" ? "Evaluating..." : "Submit Answer"}
+              </button>
+            </form>
+          ) : (
+            <div className="feedback">
+              {evaluation && (
+                <>
+                  <div className="feedback-header">
+                    <span className={`score-badge score-badge-${scoreTier(evaluation.score)} feedback-score-badge`}>
+                      {evaluation.score}/100
+                    </span>
+                    <span className="feedback-correctness">{evaluation.correctness.replaceAll("_", " ")}</span>
+                  </div>
+                  <p>{evaluation.feedback}</p>
+
+                  {(evaluation.strengths.length > 0 || evaluation.weaknesses.length > 0) && (
+                    <div className="eval-columns">
+                      {evaluation.strengths.length > 0 && (
+                        <div className="eval-column">
+                          <h4 className="eval-column-title eval-column-title-good">Strengths</h4>
+                          <ul className="eval-list">
+                            {evaluation.strengths.map((s, i) => (
+                              <li key={i}>
+                                <span className="eval-list-icon">✓</span>
+                                {s}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {evaluation.weaknesses.length > 0 && (
+                        <div className="eval-column">
+                          <h4 className="eval-column-title eval-column-title-poor">Weaknesses</h4>
+                          <ul className="eval-list">
+                            {evaluation.weaknesses.map((w, i) => (
+                              <li key={i}>
+                                <span className="eval-list-icon">△</span>
+                                {w}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {error && <p className="error-text">{error}</p>}
+
+              {isLastQuestion ? (
+                <button className="primary" onClick={handleFinish} disabled={phase === "FINISHING"}>
+                  {phase === "FINISHING" ? "Generating report..." : "Finish Interview"}
+                </button>
+              ) : sectionComplete ? (
+                <div className="section-break">
+                  <p className="section-break-title">🎉 {QUESTION_TYPE_LABEL[question.questionType]} round complete</p>
+                  <p className="hint">
+                    Take a breather — start the {nextSectionType ? QUESTION_TYPE_LABEL[nextSectionType] : "next"} round whenever you're ready.
+                  </p>
+                  <button className="primary" onClick={handleStartNextSection} disabled={sectionTransitionLoading}>
+                    {sectionTransitionLoading ? "Loading..." : `Start ${nextSectionType ? QUESTION_TYPE_LABEL[nextSectionType] : "next"} round →`}
+                  </button>
+                </div>
+              ) : (
+                <button className="primary" onClick={handleNext}>
+                  Next Question
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      <Footer />
+    </>
+  );
+}
