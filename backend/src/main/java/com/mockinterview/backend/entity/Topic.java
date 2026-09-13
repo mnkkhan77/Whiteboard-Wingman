@@ -1,0 +1,22 @@
+package com.mockinterview.backend.entity;
+
+/**
+ * One constant per interview-content chapter, generated from
+ * src/main/resources/topics/catalog.json (see TopicCatalogService) — that file, not this
+ * enum, is the source of truth for a topic's category/label/source. The 4 original topics
+ * (JAVA_COLLECTIONS/SPRING/DSA/SYSTEM_DESIGN) keep their names for backward compatibility with
+ * existing rows; everything else uses a short generated code (<CATEGORY>_C<chapter number>)
+ * since ~160 semantic names would not fit the topic columns' VARCHAR(30).
+ */
+public enum Topic {
+
+    // ---- JAVA_BACKEND ----
+    JAVA_COLLECTIONS, SPRING, DSA, SYSTEM_DESIGN, JAVA_C01, JAVA_C02, JAVA_C03, JAVA_C05, JAVA_C06, JAVA_C07, JAVA_C08, JAVA_C11, JAVA_C12, JAVA_C13, JAVA_C14, JAVA_C15, JAVA_C16, JAVA_C17, JAVA_C18, JAVA_C19, JAVA_C21, JAVA_C22, JAVA_C23, JAVA_C24, JAVA_C25, JAVA_C26, JAVA_C27, JAVA_C28, JAVA_C30, JAVA_C31, JAVA_C32,
+
+    // ---- REACT_FRONTEND ----
+    REACT_C01, REACT_C02, REACT_C03, REACT_C04, REACT_C05, REACT_C06, REACT_C07, REACT_C08, REACT_C09, REACT_C10, REACT_C11, REACT_C12, REACT_C13, REACT_C14, REACT_C15, REACT_C16, REACT_C17, REACT_C18, REACT_C19, REACT_C20, REACT_C21, REACT_C22, REACT_C23, REACT_C24, REACT_C25, REACT_C26, REACT_C27, REACT_C28, REACT_C29, REACT_C30,
+
+    // ---- AI_ENGINEERING ----
+    AI_C01, AI_C02, AI_C03, AI_C04, AI_C05, AI_C06, AI_C07, AI_C08, AI_C09, AI_C10, AI_C100, AI_C101, AI_C11, AI_C12, AI_C13, AI_C14, AI_C15, AI_C16, AI_C17, AI_C18, AI_C19, AI_C20, AI_C21, AI_C22, AI_C23, AI_C24, AI_C25, AI_C26, AI_C27, AI_C28, AI_C29, AI_C30, AI_C31, AI_C32, AI_C33, AI_C34, AI_C35, AI_C36, AI_C37, AI_C38, AI_C39, AI_C40, AI_C41, AI_C42, AI_C43, AI_C44, AI_C45, AI_C46, AI_C47, AI_C48, AI_C49, AI_C50, AI_C51, AI_C52, AI_C53, AI_C54, AI_C55, AI_C56, AI_C57, AI_C58, AI_C59, AI_C60, AI_C61, AI_C62, AI_C63, AI_C64, AI_C65, AI_C66, AI_C67, AI_C68, AI_C69, AI_C70, AI_C71, AI_C72, AI_C73, AI_C74, AI_C75, AI_C76, AI_C77, AI_C78, AI_C79, AI_C80, AI_C81, AI_C82, AI_C83, AI_C84, AI_C85, AI_C86, AI_C87, AI_C88, AI_C89, AI_C90, AI_C91, AI_C92, AI_C93, AI_C94, AI_C95, AI_C96, AI_C97, AI_C98, AI_C99
+
+}

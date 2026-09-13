@@ -1,0 +1,1461 @@
+[
+  {
+    "topic": "JAVA_COLLECTIONS",
+    "category": "JAVA_BACKEND",
+    "label": "Java Collections",
+    "sourceType": "CLASSPATH",
+    "sourcePaths": [
+      "interview-content/java_collections/04-COLLECTIONS.html"
+    ]
+  },
+  {
+    "topic": "SPRING",
+    "category": "JAVA_BACKEND",
+    "label": "Spring",
+    "sourceType": "CLASSPATH",
+    "sourcePaths": [
+      "interview-content/spring/09-SPRING-CORE.html",
+      "interview-content/spring/10-SPRING-BOOT.html"
+    ]
+  },
+  {
+    "topic": "DSA",
+    "category": "JAVA_BACKEND",
+    "label": "Data Structures & Algorithms",
+    "sourceType": "CLASSPATH",
+    "sourcePaths": [
+      "interview-content/dsa/29-DATA-STRUCTURES-AND-ALGORITHMS.html"
+    ]
+  },
+  {
+    "topic": "SYSTEM_DESIGN",
+    "category": "JAVA_BACKEND",
+    "label": "System Design",
+    "sourceType": "CLASSPATH",
+    "sourcePaths": [
+      "interview-content/system_design/20-SYSTEM-DESIGN-FOR-4-YEAR-BACKEND-ENGINEER.html"
+    ]
+  },
+  {
+    "topic": "AI_C01",
+    "category": "AI_ENGINEERING",
+    "label": "What Is Intelligence",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/01-WHAT-IS-INTELLIGENCE.html"
+    ]
+  },
+  {
+    "topic": "AI_C02",
+    "category": "AI_ENGINEERING",
+    "label": "History of AI",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/02-HISTORY-OF-AI.html"
+    ]
+  },
+  {
+    "topic": "AI_C03",
+    "category": "AI_ENGINEERING",
+    "label": "Machine Learning Fundamentals",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/03-MACHINE-LEARNING-FUNDAMENTALS.html"
+    ]
+  },
+  {
+    "topic": "AI_C04",
+    "category": "AI_ENGINEERING",
+    "label": "Neural Networks",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/04-NEURAL-NETWORKS.html"
+    ]
+  },
+  {
+    "topic": "AI_C05",
+    "category": "AI_ENGINEERING",
+    "label": "Deep Learning",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/05-DEEP-LEARNING.html"
+    ]
+  },
+  {
+    "topic": "AI_C06",
+    "category": "AI_ENGINEERING",
+    "label": "Sequence Models",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/06-SEQUENCE-MODELS.html"
+    ]
+  },
+  {
+    "topic": "AI_C07",
+    "category": "AI_ENGINEERING",
+    "label": "RNNs",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/07-RNNS.html"
+    ]
+  },
+  {
+    "topic": "AI_C08",
+    "category": "AI_ENGINEERING",
+    "label": "LSTMs",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/08-LSTMS.html"
+    ]
+  },
+  {
+    "topic": "AI_C09",
+    "category": "AI_ENGINEERING",
+    "label": "Transformers",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/09-TRANSFORMERS.html"
+    ]
+  },
+  {
+    "topic": "AI_C10",
+    "category": "AI_ENGINEERING",
+    "label": "Attention",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/10-ATTENTION.html"
+    ]
+  },
+  {
+    "topic": "AI_C100",
+    "category": "AI_ENGINEERING",
+    "label": "AI Engineer Behavioural and Career Interview Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/100-AI-ENGINEER-BEHAVIOURAL-AND-CAREER-INTERVIEW-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "AI_C101",
+    "category": "AI_ENGINEERING",
+    "label": "Data Structures and Algorithms for AI ML Engineers",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/101-DATA-STRUCTURES-AND-ALGORITHMS-FOR-AI-ML-ENGINEERS.html"
+    ]
+  },
+  {
+    "topic": "AI_C11",
+    "category": "AI_ENGINEERING",
+    "label": "Query Key and Value",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/11-QUERY-KEY-AND-VALUE.html"
+    ]
+  },
+  {
+    "topic": "AI_C12",
+    "category": "AI_ENGINEERING",
+    "label": "Multi Head Attention",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/12-MULTI-HEAD-ATTENTION.html"
+    ]
+  },
+  {
+    "topic": "AI_C13",
+    "category": "AI_ENGINEERING",
+    "label": "Positional Encoding",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/13-POSITIONAL-ENCODING.html"
+    ]
+  },
+  {
+    "topic": "AI_C14",
+    "category": "AI_ENGINEERING",
+    "label": "Decoder Architecture",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/14-DECODER-ARCHITECTURE.html"
+    ]
+  },
+  {
+    "topic": "AI_C15",
+    "category": "AI_ENGINEERING",
+    "label": "Tokens",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/15-TOKENS.html"
+    ]
+  },
+  {
+    "topic": "AI_C16",
+    "category": "AI_ENGINEERING",
+    "label": "Embeddings",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/16-EMBEDDINGS.html"
+    ]
+  },
+  {
+    "topic": "AI_C17",
+    "category": "AI_ENGINEERING",
+    "label": "Vector Mathematics",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/17-VECTOR-MATHEMATICS.html"
+    ]
+  },
+  {
+    "topic": "AI_C18",
+    "category": "AI_ENGINEERING",
+    "label": "Context Windows",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/18-CONTEXT-WINDOWS.html"
+    ]
+  },
+  {
+    "topic": "AI_C19",
+    "category": "AI_ENGINEERING",
+    "label": "Sampling",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/19-SAMPLING.html"
+    ]
+  },
+  {
+    "topic": "AI_C20",
+    "category": "AI_ENGINEERING",
+    "label": "Hallucinations",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/20-HALLUCINATIONS.html"
+    ]
+  },
+  {
+    "topic": "AI_C21",
+    "category": "AI_ENGINEERING",
+    "label": "Prompt Engineering",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/21-PROMPT-ENGINEERING.html"
+    ]
+  },
+  {
+    "topic": "AI_C22",
+    "category": "AI_ENGINEERING",
+    "label": "Context Engineering",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/22-CONTEXT-ENGINEERING.html"
+    ]
+  },
+  {
+    "topic": "AI_C23",
+    "category": "AI_ENGINEERING",
+    "label": "Fine Tuning",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/23-FINE-TUNING.html"
+    ]
+  },
+  {
+    "topic": "AI_C24",
+    "category": "AI_ENGINEERING",
+    "label": "Reasoning Models",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/24-REASONING-MODELS.html"
+    ]
+  },
+  {
+    "topic": "AI_C25",
+    "category": "AI_ENGINEERING",
+    "label": "Introduction to RAG",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/25-INTRODUCTION-TO-RAG.html"
+    ]
+  },
+  {
+    "topic": "AI_C26",
+    "category": "AI_ENGINEERING",
+    "label": "Spring AI Architecture",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/26-SPRING-AI-ARCHITECTURE.html"
+    ]
+  },
+  {
+    "topic": "AI_C27",
+    "category": "AI_ENGINEERING",
+    "label": "ChatModel",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/27-CHATMODEL.html"
+    ]
+  },
+  {
+    "topic": "AI_C28",
+    "category": "AI_ENGINEERING",
+    "label": "ChatClient",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/28-CHATCLIENT.html"
+    ]
+  },
+  {
+    "topic": "AI_C29",
+    "category": "AI_ENGINEERING",
+    "label": "Prompt",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/29-PROMPT.html"
+    ]
+  },
+  {
+    "topic": "AI_C30",
+    "category": "AI_ENGINEERING",
+    "label": "PromptTemplate",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/30-PROMPTTEMPLATE.html"
+    ]
+  },
+  {
+    "topic": "AI_C31",
+    "category": "AI_ENGINEERING",
+    "label": "Advisors",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/31-ADVISORS.html"
+    ]
+  },
+  {
+    "topic": "AI_C32",
+    "category": "AI_ENGINEERING",
+    "label": "Memory",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/32-MEMORY.html"
+    ]
+  },
+  {
+    "topic": "AI_C33",
+    "category": "AI_ENGINEERING",
+    "label": "Streaming",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/33-STREAMING.html"
+    ]
+  },
+  {
+    "topic": "AI_C34",
+    "category": "AI_ENGINEERING",
+    "label": "Structured Output",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/34-STRUCTURED-OUTPUT.html"
+    ]
+  },
+  {
+    "topic": "AI_C35",
+    "category": "AI_ENGINEERING",
+    "label": "Tool Calling",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/35-TOOL-CALLING.html"
+    ]
+  },
+  {
+    "topic": "AI_C36",
+    "category": "AI_ENGINEERING",
+    "label": "Multi Model Support",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/36-MULTI-MODEL-SUPPORT.html"
+    ]
+  },
+  {
+    "topic": "AI_C37",
+    "category": "AI_ENGINEERING",
+    "label": "MCP Integration",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/37-MCP-INTEGRATION.html"
+    ]
+  },
+  {
+    "topic": "AI_C38",
+    "category": "AI_ENGINEERING",
+    "label": "Observability",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/38-OBSERVABILITY.html"
+    ]
+  },
+  {
+    "topic": "AI_C39",
+    "category": "AI_ENGINEERING",
+    "label": "Testing",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/39-TESTING.html"
+    ]
+  },
+  {
+    "topic": "AI_C40",
+    "category": "AI_ENGINEERING",
+    "label": "Performance Optimization",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/40-PERFORMANCE-OPTIMIZATION.html"
+    ]
+  },
+  {
+    "topic": "AI_C41",
+    "category": "AI_ENGINEERING",
+    "label": "Embedding Models",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/41-EMBEDDING-MODELS.html"
+    ]
+  },
+  {
+    "topic": "AI_C42",
+    "category": "AI_ENGINEERING",
+    "label": "Chunking",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/42-CHUNKING.html"
+    ]
+  },
+  {
+    "topic": "AI_C43",
+    "category": "AI_ENGINEERING",
+    "label": "Vector Databases",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/43-VECTOR-DATABASES.html"
+    ]
+  },
+  {
+    "topic": "AI_C44",
+    "category": "AI_ENGINEERING",
+    "label": "PGVector",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/44-PGVECTOR.html"
+    ]
+  },
+  {
+    "topic": "AI_C45",
+    "category": "AI_ENGINEERING",
+    "label": "Pinecone",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/45-PINECONE.html"
+    ]
+  },
+  {
+    "topic": "AI_C46",
+    "category": "AI_ENGINEERING",
+    "label": "Qdrant",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/46-QDRANT.html"
+    ]
+  },
+  {
+    "topic": "AI_C47",
+    "category": "AI_ENGINEERING",
+    "label": "Weaviate",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/47-WEAVIATE.html"
+    ]
+  },
+  {
+    "topic": "AI_C48",
+    "category": "AI_ENGINEERING",
+    "label": "Hybrid Search",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/48-HYBRID-SEARCH.html"
+    ]
+  },
+  {
+    "topic": "AI_C49",
+    "category": "AI_ENGINEERING",
+    "label": "Reranking",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/49-RERANKING.html"
+    ]
+  },
+  {
+    "topic": "AI_C50",
+    "category": "AI_ENGINEERING",
+    "label": "Metadata Filtering",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/50-METADATA-FILTERING.html"
+    ]
+  },
+  {
+    "topic": "AI_C51",
+    "category": "AI_ENGINEERING",
+    "label": "Retrieval Strategies",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/51-RETRIEVAL-STRATEGIES.html"
+    ]
+  },
+  {
+    "topic": "AI_C52",
+    "category": "AI_ENGINEERING",
+    "label": "Enterprise RAG",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/52-ENTERPRISE-RAG.html"
+    ]
+  },
+  {
+    "topic": "AI_C53",
+    "category": "AI_ENGINEERING",
+    "label": "Evaluation",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/53-EVALUATION.html"
+    ]
+  },
+  {
+    "topic": "AI_C54",
+    "category": "AI_ENGINEERING",
+    "label": "Agent Fundamentals",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/54-AGENT-FUNDAMENTALS.html"
+    ]
+  },
+  {
+    "topic": "AI_C55",
+    "category": "AI_ENGINEERING",
+    "label": "Planning",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/55-PLANNING.html"
+    ]
+  },
+  {
+    "topic": "AI_C56",
+    "category": "AI_ENGINEERING",
+    "label": "Reflection",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/56-REFLECTION.html"
+    ]
+  },
+  {
+    "topic": "AI_C57",
+    "category": "AI_ENGINEERING",
+    "label": "Agent Memory",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/57-AGENT-MEMORY.html"
+    ]
+  },
+  {
+    "topic": "AI_C58",
+    "category": "AI_ENGINEERING",
+    "label": "Tool Usage",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/58-TOOL-USAGE.html"
+    ]
+  },
+  {
+    "topic": "AI_C59",
+    "category": "AI_ENGINEERING",
+    "label": "Agent Orchestration",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/59-AGENT-ORCHESTRATION.html"
+    ]
+  },
+  {
+    "topic": "AI_C60",
+    "category": "AI_ENGINEERING",
+    "label": "Multi Agent Systems",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/60-MULTI-AGENT-SYSTEMS.html"
+    ]
+  },
+  {
+    "topic": "AI_C61",
+    "category": "AI_ENGINEERING",
+    "label": "MCP Deep Dive",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/61-MCP-DEEP-DIVE.html"
+    ]
+  },
+  {
+    "topic": "AI_C62",
+    "category": "AI_ENGINEERING",
+    "label": "Agent Architectures",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/62-AGENT-ARCHITECTURES.html"
+    ]
+  },
+  {
+    "topic": "AI_C63",
+    "category": "AI_ENGINEERING",
+    "label": "Enterprise Agents",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/63-ENTERPRISE-AGENTS.html"
+    ]
+  },
+  {
+    "topic": "AI_C64",
+    "category": "AI_ENGINEERING",
+    "label": "Security",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/64-SECURITY.html"
+    ]
+  },
+  {
+    "topic": "AI_C65",
+    "category": "AI_ENGINEERING",
+    "label": "Guardrails",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/65-GUARDRAILS.html"
+    ]
+  },
+  {
+    "topic": "AI_C66",
+    "category": "AI_ENGINEERING",
+    "label": "Prompt Injection",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/66-PROMPT-INJECTION.html"
+    ]
+  },
+  {
+    "topic": "AI_C67",
+    "category": "AI_ENGINEERING",
+    "label": "Evaluation At Enterprise Scale",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/67-EVALUATION-AT-ENTERPRISE-SCALE.html"
+    ]
+  },
+  {
+    "topic": "AI_C68",
+    "category": "AI_ENGINEERING",
+    "label": "Monitoring",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/68-MONITORING.html"
+    ]
+  },
+  {
+    "topic": "AI_C69",
+    "category": "AI_ENGINEERING",
+    "label": "Observability At Scale",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/69-OBSERVABILITY-AT-SCALE.html"
+    ]
+  },
+  {
+    "topic": "AI_C70",
+    "category": "AI_ENGINEERING",
+    "label": "Cost Optimization",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/70-COST-OPTIMIZATION.html"
+    ]
+  },
+  {
+    "topic": "AI_C71",
+    "category": "AI_ENGINEERING",
+    "label": "Scaling",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/71-SCALING.html"
+    ]
+  },
+  {
+    "topic": "AI_C72",
+    "category": "AI_ENGINEERING",
+    "label": "Kubernetes for AI Workloads",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/72-KUBERNETES-FOR-AI-WORKLOADS.html"
+    ]
+  },
+  {
+    "topic": "AI_C73",
+    "category": "AI_ENGINEERING",
+    "label": "Distributed Systems for AI",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/73-DISTRIBUTED-SYSTEMS-FOR-AI.html"
+    ]
+  },
+  {
+    "topic": "AI_C74",
+    "category": "AI_ENGINEERING",
+    "label": "Governance",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/74-GOVERNANCE.html"
+    ]
+  },
+  {
+    "topic": "AI_C75",
+    "category": "AI_ENGINEERING",
+    "label": "Compliance",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/75-COMPLIANCE.html"
+    ]
+  },
+  {
+    "topic": "AI_C76",
+    "category": "AI_ENGINEERING",
+    "label": "AI Chat Platform",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/76-AI-CHAT-PLATFORM.html"
+    ]
+  },
+  {
+    "topic": "AI_C77",
+    "category": "AI_ENGINEERING",
+    "label": "Enterprise Knowledge Assistant",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/77-ENTERPRISE-KNOWLEDGE-ASSISTANT.html"
+    ]
+  },
+  {
+    "topic": "AI_C78",
+    "category": "AI_ENGINEERING",
+    "label": "AI Powered Lms",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/78-AI-POWERED-LMS.html"
+    ]
+  },
+  {
+    "topic": "AI_C79",
+    "category": "AI_ENGINEERING",
+    "label": "Resume Analyzer",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/79-RESUME-ANALYZER.html"
+    ]
+  },
+  {
+    "topic": "AI_C80",
+    "category": "AI_ENGINEERING",
+    "label": "SQL Copilot",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/80-SQL-COPILOT.html"
+    ]
+  },
+  {
+    "topic": "AI_C81",
+    "category": "AI_ENGINEERING",
+    "label": "Coding Assistant",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/81-CODING-ASSISTANT.html"
+    ]
+  },
+  {
+    "topic": "AI_C82",
+    "category": "AI_ENGINEERING",
+    "label": "Customer Support AI",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/82-CUSTOMER-SUPPORT-AI.html"
+    ]
+  },
+  {
+    "topic": "AI_C83",
+    "category": "AI_ENGINEERING",
+    "label": "Incident Analysis System",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/83-INCIDENT-ANALYSIS-SYSTEM.html"
+    ]
+  },
+  {
+    "topic": "AI_C84",
+    "category": "AI_ENGINEERING",
+    "label": "Document Intelligence Platform",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/84-DOCUMENT-INTELLIGENCE-PLATFORM.html"
+    ]
+  },
+  {
+    "topic": "AI_C85",
+    "category": "AI_ENGINEERING",
+    "label": "Multi Agent Research System",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/85-MULTI-AGENT-RESEARCH-SYSTEM.html"
+    ]
+  },
+  {
+    "topic": "AI_C86",
+    "category": "AI_ENGINEERING",
+    "label": "AI Voice Assistant",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/86-AI-VOICE-ASSISTANT.html"
+    ]
+  },
+  {
+    "topic": "AI_C87",
+    "category": "AI_ENGINEERING",
+    "label": "AI Workflow Automation Platform",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/87-AI-WORKFLOW-AUTOMATION-PLATFORM.html"
+    ]
+  },
+  {
+    "topic": "AI_C88",
+    "category": "AI_ENGINEERING",
+    "label": "Fine Tuning Deep Dive",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/88-FINE-TUNING-DEEP-DIVE.html"
+    ]
+  },
+  {
+    "topic": "AI_C89",
+    "category": "AI_ENGINEERING",
+    "label": "Model Quantization and Local Deployment",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/89-MODEL-QUANTIZATION-AND-LOCAL-DEPLOYMENT.html"
+    ]
+  },
+  {
+    "topic": "AI_C90",
+    "category": "AI_ENGINEERING",
+    "label": "Multi Modal Models",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/90-MULTI-MODAL-MODELS.html"
+    ]
+  },
+  {
+    "topic": "AI_C91",
+    "category": "AI_ENGINEERING",
+    "label": "LLMOPS and Model Lifecycle Management",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/91-LLMOPS-AND-MODEL-LIFECYCLE-MANAGEMENT.html"
+    ]
+  },
+  {
+    "topic": "AI_C92",
+    "category": "AI_ENGINEERING",
+    "label": "Responsible AI Safety and Ethics",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/92-RESPONSIBLE-AI-SAFETY-AND-ETHICS.html"
+    ]
+  },
+  {
+    "topic": "AI_C93",
+    "category": "AI_ENGINEERING",
+    "label": "AI Engineer Behavioural and Career Interview",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/93-AI-ENGINEER-BEHAVIOURAL-AND-CAREER-INTERVIEW.html"
+    ]
+  },
+  {
+    "topic": "AI_C94",
+    "category": "AI_ENGINEERING",
+    "label": "AI and Machine Learning Fundamentals Interview Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/94-AI-AND-MACHINE-LEARNING-FUNDAMENTALS-INTERVIEW-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "AI_C95",
+    "category": "AI_ENGINEERING",
+    "label": "Deep Learning Transformers and Attention Interview Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/95-DEEP-LEARNING-TRANSFORMERS-AND-ATTENTION-INTERVIEW-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "AI_C96",
+    "category": "AI_ENGINEERING",
+    "label": "Prompt Engineering RAG and Embeddings Interview Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/96-PROMPT-ENGINEERING-RAG-AND-EMBEDDINGS-INTERVIEW-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "AI_C97",
+    "category": "AI_ENGINEERING",
+    "label": "AI Agents Tool Calling and MCP Interview Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/97-AI-AGENTS-TOOL-CALLING-AND-MCP-INTERVIEW-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "AI_C98",
+    "category": "AI_ENGINEERING",
+    "label": "Spring AI and Production AI Engineering Interview Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/98-SPRING-AI-AND-PRODUCTION-AI-ENGINEERING-INTERVIEW-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "AI_C99",
+    "category": "AI_ENGINEERING",
+    "label": "LLMOPS Fine Tuning and Safety Interview Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "ai-engineering/99-LLMOPS-FINE-TUNING-AND-SAFETY-INTERVIEW-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C01",
+    "category": "JAVA_BACKEND",
+    "label": "Introduction and HR",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/01-INTRODUCTION-AND-HR.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C02",
+    "category": "JAVA_BACKEND",
+    "label": "Behavioural HR Introduction",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/02-BEHAVIOURAL-HR-INTRODUCTION.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C03",
+    "category": "JAVA_BACKEND",
+    "label": "Core Java",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/03-CORE-JAVA.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C05",
+    "category": "JAVA_BACKEND",
+    "label": "Java8 to 21",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/05-JAVA8-TO-21.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C06",
+    "category": "JAVA_BACKEND",
+    "label": "Concurrency and Multithreading",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/06-CONCURRENCY-AND-MULTITHREADING.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C07",
+    "category": "JAVA_BACKEND",
+    "label": "JVM Garbage Collection",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/07-JVM-GARBAGE-COLLECTION.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C08",
+    "category": "JAVA_BACKEND",
+    "label": "Modern Java Features",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/08-MODERN-JAVA-FEATURES.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C11",
+    "category": "JAVA_BACKEND",
+    "label": "Spring Data JPA Hibernate",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/11-SPRING-DATA-JPA-HIBERNATE.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C12",
+    "category": "JAVA_BACKEND",
+    "label": "Spring Security JWT OAuth2",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/12-SPRING-SECURITY-JWT-OAUTH2.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C13",
+    "category": "JAVA_BACKEND",
+    "label": "Reactive Programming",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/13-REACTIVE-PROGRAMMING.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C14",
+    "category": "JAVA_BACKEND",
+    "label": "Unit Testing",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/14-UNIT-TESTING.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C15",
+    "category": "JAVA_BACKEND",
+    "label": "Design Patterns",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/15-DESIGN-PATTERNS.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C16",
+    "category": "JAVA_BACKEND",
+    "label": "REST API Design",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/16-REST-API-DESIGN.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C17",
+    "category": "JAVA_BACKEND",
+    "label": "Messaging and Event Streaming",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/17-MESSAGING-AND-EVENT-STREAMING.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C18",
+    "category": "JAVA_BACKEND",
+    "label": "Kafka and Event Driven Architecture Deep Dive",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/18-KAFKA-AND-EVENT-DRIVEN-ARCHITECTURE-DEEP-DIVE.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C19",
+    "category": "JAVA_BACKEND",
+    "label": "Microservices",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/19-MICROSERVICES.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C21",
+    "category": "JAVA_BACKEND",
+    "label": "Caching Strategies",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/21-CACHING-STRATEGIES.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C22",
+    "category": "JAVA_BACKEND",
+    "label": "SQL Database Design",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/22-SQL-DATABASE-DESIGN.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C23",
+    "category": "JAVA_BACKEND",
+    "label": "NOSQL and MongoDB",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/23-NOSQL-AND-MONGODB.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C24",
+    "category": "JAVA_BACKEND",
+    "label": "Devops Docker Kubernetes",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/24-DEVOPS-DOCKER-KUBERNETES.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C25",
+    "category": "JAVA_BACKEND",
+    "label": "Cloud and AWS",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/25-CLOUD-AND-AWS.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C26",
+    "category": "JAVA_BACKEND",
+    "label": "Observability and Monitoring",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/26-OBSERVABILITY-AND-MONITORING.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C27",
+    "category": "JAVA_BACKEND",
+    "label": "Git and Version Control",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/27-GIT-AND-VERSION-CONTROL.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C28",
+    "category": "JAVA_BACKEND",
+    "label": "Build Tools Maven and Gradle",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/28-BUILD-TOOLS-MAVEN-AND-GRADLE.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C30",
+    "category": "JAVA_BACKEND",
+    "label": "Senior Software Engineer Mock Interview 1000 Questions",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/30-SENIOR-SOFTWARE-ENGINEER-MOCK-INTERVIEW-1000-QUESTIONS.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C31",
+    "category": "JAVA_BACKEND",
+    "label": "CI CD Pipelines Jenkins GitHub Actions and GitLab CI",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/31-CI-CD-PIPELINES-JENKINS-GITHUB-ACTIONS-AND-GITLAB-CI.html"
+    ]
+  },
+  {
+    "topic": "JAVA_C32",
+    "category": "JAVA_BACKEND",
+    "label": "Integration and Contract Testing Testcontainers and Pact",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "java/32-INTEGRATION-AND-CONTRACT-TESTING-TESTCONTAINERS-AND-PACT.html"
+    ]
+  },
+  {
+    "topic": "REACT_C01",
+    "category": "REACT_FRONTEND",
+    "label": "Introduction and HR",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/01-INTRODUCTION-AND-HR.html"
+    ]
+  },
+  {
+    "topic": "REACT_C02",
+    "category": "REACT_FRONTEND",
+    "label": "Behavioural and Self Introduction",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/02-BEHAVIOURAL-AND-SELF-INTRODUCTION.html"
+    ]
+  },
+  {
+    "topic": "REACT_C03",
+    "category": "REACT_FRONTEND",
+    "label": "JavaScript Fundamentals",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/03-JAVASCRIPT-FUNDAMENTALS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C04",
+    "category": "REACT_FRONTEND",
+    "label": "Advanced JavaScript and Async",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/04-ADVANCED-JAVASCRIPT-AND-ASYNC.html"
+    ]
+  },
+  {
+    "topic": "REACT_C05",
+    "category": "REACT_FRONTEND",
+    "label": "TypeScript for React",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/05-TYPESCRIPT-FOR-REACT.html"
+    ]
+  },
+  {
+    "topic": "REACT_C06",
+    "category": "REACT_FRONTEND",
+    "label": "React Fundamentals",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/06-REACT-FUNDAMENTALS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C07",
+    "category": "REACT_FRONTEND",
+    "label": "React Hooks",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/07-REACT-HOOKS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C08",
+    "category": "REACT_FRONTEND",
+    "label": "Advanced Hooks and Custom Hooks",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/08-ADVANCED-HOOKS-AND-CUSTOM-HOOKS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C09",
+    "category": "REACT_FRONTEND",
+    "label": "Component Patterns",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/09-COMPONENT-PATTERNS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C10",
+    "category": "REACT_FRONTEND",
+    "label": "State Management",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/10-STATE-MANAGEMENT.html"
+    ]
+  },
+  {
+    "topic": "REACT_C11",
+    "category": "REACT_FRONTEND",
+    "label": "Data Fetching and Server State",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/11-DATA-FETCHING-AND-SERVER-STATE.html"
+    ]
+  },
+  {
+    "topic": "REACT_C12",
+    "category": "REACT_FRONTEND",
+    "label": "Forms and Validation",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/12-FORMS-AND-VALIDATION.html"
+    ]
+  },
+  {
+    "topic": "REACT_C13",
+    "category": "REACT_FRONTEND",
+    "label": "GraphQL and Apollo Client",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/13-GRAPHQL-AND-APOLLO-CLIENT.html"
+    ]
+  },
+  {
+    "topic": "REACT_C14",
+    "category": "REACT_FRONTEND",
+    "label": "React Router and Navigation",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/14-REACT-ROUTER-AND-NAVIGATION.html"
+    ]
+  },
+  {
+    "topic": "REACT_C15",
+    "category": "REACT_FRONTEND",
+    "label": "Next.js SSR and Server Components",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/15-NEXTJS-SSR-AND-SERVER-COMPONENTS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C16",
+    "category": "REACT_FRONTEND",
+    "label": "React 19 Server Actions and Concurrent Features",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/16-REACT-19-SERVER-ACTIONS-AND-CONCURRENT-FEATURES.html"
+    ]
+  },
+  {
+    "topic": "REACT_C17",
+    "category": "REACT_FRONTEND",
+    "label": "Performance Optimization",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/17-PERFORMANCE-OPTIMIZATION.html"
+    ]
+  },
+  {
+    "topic": "REACT_C18",
+    "category": "REACT_FRONTEND",
+    "label": "React Internals Fiber and Reconciliation",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/18-REACT-INTERNALS-FIBER-AND-RECONCILIATION.html"
+    ]
+  },
+  {
+    "topic": "REACT_C19",
+    "category": "REACT_FRONTEND",
+    "label": "Styling and CSS Architecture",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/19-STYLING-AND-CSS-ARCHITECTURE.html"
+    ]
+  },
+  {
+    "topic": "REACT_C20",
+    "category": "REACT_FRONTEND",
+    "label": "Design Systems and Component Libraries",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/20-DESIGN-SYSTEMS-AND-COMPONENT-LIBRARIES.html"
+    ]
+  },
+  {
+    "topic": "REACT_C21",
+    "category": "REACT_FRONTEND",
+    "label": "Testing Jest and React Testing Library",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/21-TESTING-JEST-AND-REACT-TESTING-LIBRARY.html"
+    ]
+  },
+  {
+    "topic": "REACT_C22",
+    "category": "REACT_FRONTEND",
+    "label": "Accessibility",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/22-ACCESSIBILITY.html"
+    ]
+  },
+  {
+    "topic": "REACT_C23",
+    "category": "REACT_FRONTEND",
+    "label": "End to End Testing Cypress and Playwright",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/23-END-TO-END-TESTING-CYPRESS-AND-PLAYWRIGHT.html"
+    ]
+  },
+  {
+    "topic": "REACT_C24",
+    "category": "REACT_FRONTEND",
+    "label": "Browser and Web Platform Fundamentals",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/24-BROWSER-AND-WEB-PLATFORM-FUNDAMENTALS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C25",
+    "category": "REACT_FRONTEND",
+    "label": "Frontend Security",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/25-FRONTEND-SECURITY.html"
+    ]
+  },
+  {
+    "topic": "REACT_C26",
+    "category": "REACT_FRONTEND",
+    "label": "Progressive Web Apps and Service Workers",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/26-PROGRESSIVE-WEB-APPS-AND-SERVICE-WORKERS.html"
+    ]
+  },
+  {
+    "topic": "REACT_C27",
+    "category": "REACT_FRONTEND",
+    "label": "Internationalization i18n",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/27-INTERNATIONALIZATION-I18N.html"
+    ]
+  },
+  {
+    "topic": "REACT_C28",
+    "category": "REACT_FRONTEND",
+    "label": "Build Tools and Tooling",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/28-BUILD-TOOLS-AND-TOOLING.html"
+    ]
+  },
+  {
+    "topic": "REACT_C29",
+    "category": "REACT_FRONTEND",
+    "label": "Frontend System Design",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/29-FRONTEND-SYSTEM-DESIGN.html"
+    ]
+  },
+  {
+    "topic": "REACT_C30",
+    "category": "REACT_FRONTEND",
+    "label": "Data Structures and Algorithms",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "react/30-DATA-STRUCTURES-AND-ALGORITHMS.html"
+    ]
+  }
+]
