@@ -1,4 +1,4 @@
-# AI-Powered Mock Interview Simulator
+# Whiteboard Wingman
 
 A live, adaptive technical mock interview platform. It asks a question, evaluates your answer
 with an LLM, adjusts the next question's difficulty based on how you did, and produces a report

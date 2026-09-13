@@ -1,4 +1,4 @@
-# AI-Powered Mock Interview Simulator — Implementation Plan
+# Whiteboard Wingman — Implementation Plan
 
 ## Context
 

@@ -10,10 +10,10 @@
 	</parent>
 
 	<groupId>com.mockinterview</groupId>
-	<artifactId>backend</artifactId>
+	<artifactId>whiteboard-wingman</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>backend</name>
-	<description>AI-powered mock interview simulator backend</description>
+	<name>Whiteboard Wingman</name>
+	<description>Whiteboard Wingman — an adaptive AI mock interview platform (backend)</description>
 
 	<properties>
 		<java.version>17</java.version>
