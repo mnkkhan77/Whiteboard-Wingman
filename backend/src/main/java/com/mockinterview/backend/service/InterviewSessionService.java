@@ -59,10 +59,12 @@ public class InterviewSessionService {
 
         int questionCount = request.questionCount() != null ? request.questionCount() : 8;
         boolean llmAvailable = apiKey != null && !apiKey.isBlank();
+        List<Topic> topics = resolveTopics(request);
 
         InterviewSession session = new InterviewSession();
         session.setUser(user);
-        session.setTopic(request.topic());
+        session.setTopic(topics.get(0));
+        session.setTopicQueue(new ArrayList<>(topics.subList(1, topics.size())));
         session.setStartingDifficulty(request.startingDifficulty());
         session.setCurrentDifficulty(request.startingDifficulty());
         session.setTargetQuestionCount(questionCount);
@@ -72,7 +74,7 @@ public class InterviewSessionService {
             // Fails fast on a missing/blank key. Building the client doesn't call the provider, so an
             // invalid-but-present key is only caught later, on the first real evaluate() call.
             chatClientFactory.forRequest(apiKey, provider, model);
-        } else if (sectionOrder(session).isEmpty()) {
+        } else if (!hasGradableContentWithoutLlm(topics)) {
             throw new IllegalArgumentException(
                     "Without an API key, this topic has no multiple-choice or coding questions to practice — "
                             + "please provide a key, or pick a different topic.");
@@ -155,25 +157,38 @@ public class InterviewSessionService {
 
         session.setQuestionsAsked(session.getQuestionsAsked() + 1);
 
+        // Scoped to the just-answered question's own topic — priorQuestions can span earlier,
+        // already-exhausted topics in a multi-topic session, which must not count against this one.
         List<Question> askedSoFar = questionRepository.findBySessionOrderBySequenceNumberAsc(session);
-        long askedInSection = askedSoFar.stream().filter(q -> q.getQuestionType() == currentQuestion.getQuestionType()).count();
+        long askedInSection = askedSoFar.stream()
+                .filter(q -> q.getQuestionType() == currentQuestion.getQuestionType() && q.getTopic() == currentQuestion.getTopic())
+                .count();
         boolean sectionComplete = askedInSection >= sectionTarget(session, currentQuestion.getQuestionType());
 
         List<QuestionType> order = sectionOrder(session);
         int sectionIndex = order.indexOf(currentQuestion.getQuestionType());
-        boolean hasNextSection = sectionComplete && sectionIndex >= 0 && sectionIndex + 1 < order.size();
+        boolean hasNextSectionInTopic = sectionComplete && sectionIndex >= 0 && sectionIndex + 1 < order.size();
 
         QuestionResponse nextQuestionResponse = null;
         QuestionType nextSectionType = null;
+        Topic nextTopic = null;
+        boolean movesToNextSection;
 
         if (!sectionComplete) {
             Question nextQuestion = createNextQuestion(session);
             nextQuestionResponse = QuestionResponse.from(nextQuestion);
-        } else if (hasNextSection) {
+            movesToNextSection = false;
+        } else if (hasNextSectionInTopic) {
             nextSectionType = order.get(sectionIndex + 1);
+            movesToNextSection = true;
+        } else if (advanceToNextRunnableTopic(session)) {
+            nextTopic = session.getTopic();
+            nextSectionType = sectionOrder(session).get(0);
+            movesToNextSection = true;
         } else {
             session.setStatus(SessionStatus.COMPLETED);
             session.setCompletedAt(java.time.LocalDateTime.now());
+            movesToNextSection = false;
         }
         sessionRepository.save(session);
 
@@ -181,9 +196,10 @@ public class InterviewSessionService {
                 result,
                 nextQuestionResponse,
                 session.getStatus(),
-                new ProgressResponse(session.getQuestionsAsked(), grandTotalQuestions(session)),
-                sectionComplete && hasNextSection,
-                nextSectionType
+                new ProgressResponse(session.getQuestionsAsked(), grandTotalQuestions(session, askedSoFar)),
+                movesToNextSection,
+                nextSectionType,
+                nextTopic
         );
     }
 
@@ -243,9 +259,11 @@ public class InterviewSessionService {
         InterviewSession session = getOwnedSession(user, sessionId);
         QuestionResponse currentQuestion = null;
         QuestionType pendingSectionType = null;
+        int total = grandTotalQuestions(session, List.of());
 
         if (session.getStatus() == SessionStatus.IN_PROGRESS) {
             List<Question> priorQuestions = questionRepository.findBySessionOrderBySequenceNumberAsc(session);
+            total = grandTotalQuestions(session, priorQuestions);
             Question latest = priorQuestions.isEmpty() ? null : priorQuestions.get(priorQuestions.size() - 1);
             boolean latestAnswered = latest != null && answerRepository.existsByQuestion(latest);
 
@@ -258,9 +276,11 @@ public class InterviewSessionService {
 
         return new SessionResumeResponse(
                 session.getStatus(),
-                new ProgressResponse(session.getQuestionsAsked(), grandTotalQuestions(session)),
+                new ProgressResponse(session.getQuestionsAsked(), total),
                 currentQuestion,
-                pendingSectionType
+                pendingSectionType,
+                session.getTopic(),
+                session.getTopicQueue().size()
         );
     }
 
@@ -315,11 +335,16 @@ public class InterviewSessionService {
     }
 
     /** Which section (verbal/MCQ/coding) the next-asked question should belong to, given how many
-     *  of each type have been asked so far. Throws if every section's target is already met — that
-     *  should be unreachable, since submitAnswer marks the session COMPLETED at that point instead. */
+     *  of the *current topic's* questions of each type have been asked so far — priorQuestions may
+     *  also contain earlier, already-exhausted topics in a multi-topic session, which must not
+     *  count here. Throws if every section's target is already met for the current topic — that
+     *  should be unreachable, since submitAnswer advances to the next queued topic (or marks the
+     *  session COMPLETED) at that point instead. */
     private QuestionType resolveSectionType(InterviewSession session, List<Question> priorQuestions) {
         for (QuestionType type : sectionOrder(session)) {
-            long askedInSection = priorQuestions.stream().filter(q -> q.getQuestionType() == type).count();
+            long askedInSection = priorQuestions.stream()
+                    .filter(q -> q.getQuestionType() == type && q.getTopic() == session.getTopic())
+                    .count();
             if (askedInSection < sectionTarget(session, type)) {
                 return type;
             }
@@ -329,30 +354,91 @@ public class InterviewSessionService {
 
     /** Verbal runs unless the session has no LLM key (nothing can grade it without one); MCQ/coding
      *  only run if the topic actually has bank content for them. */
-    private List<QuestionType> sectionOrder(InterviewSession session) {
+    private List<QuestionType> sectionOrder(InterviewSession session, Topic topic) {
         List<QuestionType> order = new ArrayList<>();
         if (session.isLlmAvailable()) {
             order.add(QuestionType.CONCEPTUAL);
         }
-        if (questionBank.countByType(session.getTopic(), QuestionType.MCQ) > 0) {
+        if (questionBank.countByType(topic, QuestionType.MCQ) > 0) {
             order.add(QuestionType.MCQ);
         }
-        if (questionBank.countByType(session.getTopic(), QuestionType.CODING) > 0) {
+        if (questionBank.countByType(topic, QuestionType.CODING) > 0) {
             order.add(QuestionType.CODING);
         }
         return order;
     }
 
-    private int sectionTarget(InterviewSession session, QuestionType type) {
+    private List<QuestionType> sectionOrder(InterviewSession session) {
+        return sectionOrder(session, session.getTopic());
+    }
+
+    private int sectionTarget(InterviewSession session, Topic topic, QuestionType type) {
         return switch (type) {
             case CONCEPTUAL -> session.getTargetQuestionCount();
-            case MCQ -> questionBank.countByType(session.getTopic(), QuestionType.MCQ);
-            case CODING -> questionBank.countByType(session.getTopic(), QuestionType.CODING);
+            case MCQ -> questionBank.countByType(topic, QuestionType.MCQ);
+            case CODING -> questionBank.countByType(topic, QuestionType.CODING);
         };
     }
 
-    private int grandTotalQuestions(InterviewSession session) {
-        return sectionOrder(session).stream().mapToInt(t -> sectionTarget(session, t)).sum();
+    private int sectionTarget(InterviewSession session, QuestionType type) {
+        return sectionTarget(session, session.getTopic(), type);
+    }
+
+    /** Sums every topic's section targets — topics already asked from (per Question.topic, which
+     *  keeps its value even after session.topic itself has moved on), the current topic, and any
+     *  still queued — so the progress bar's total is both accurate from the very first question of
+     *  a multi-topic session and stays stable as topics complete, instead of shrinking each time.
+     *  priorQuestions may be passed as an empty list (e.g. a resumed session that isn't
+     *  IN_PROGRESS, where nothing needs querying) at the cost of not counting topics already
+     *  exhausted in that one case. */
+    private int grandTotalQuestions(InterviewSession session, List<Question> priorQuestions) {
+        List<Topic> allTopics = new ArrayList<>();
+        priorQuestions.stream().map(Question::getTopic).forEach(t -> {
+            if (!allTopics.contains(t)) {
+                allTopics.add(t);
+            }
+        });
+        if (!allTopics.contains(session.getTopic())) {
+            allTopics.add(session.getTopic());
+        }
+        for (Topic t : session.getTopicQueue()) {
+            if (!allTopics.contains(t)) {
+                allTopics.add(t);
+            }
+        }
+        return allTopics.stream()
+                .mapToInt(t -> sectionOrder(session, t).stream().mapToInt(type -> sectionTarget(session, t, type)).sum())
+                .sum();
+    }
+
+    private List<Topic> resolveTopics(StartSessionRequest request) {
+        if (request.topics() != null && request.topics().size() >= 2) {
+            return request.topics();
+        }
+        return List.of(request.topic());
+    }
+
+    private boolean hasGradableContentWithoutLlm(List<Topic> topics) {
+        return topics.stream().anyMatch(t ->
+                questionBank.countByType(t, QuestionType.MCQ) > 0 || questionBank.countByType(t, QuestionType.CODING) > 0);
+    }
+
+    /** Pops queued topics into session.topic — resetting currentDifficulty back to
+     *  startingDifficulty each time, so a fresh topic doesn't inherit unrelated difficulty drift
+     *  from the one before it — until one has at least one runnable section, or the queue runs
+     *  out. Returns false, meaning the whole session is now done, only once every queued topic
+     *  (as well as the current one) has been exhausted. */
+    private boolean advanceToNextRunnableTopic(InterviewSession session) {
+        List<Topic> queue = session.getTopicQueue();
+        while (!queue.isEmpty()) {
+            Topic next = queue.remove(0);
+            session.setTopic(next);
+            session.setCurrentDifficulty(session.getStartingDifficulty());
+            if (!sectionOrder(session).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String describeSelectedOption(Question question, int selectedOptionIndex) {

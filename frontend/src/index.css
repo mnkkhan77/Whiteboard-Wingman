@@ -1064,6 +1064,54 @@ button.secondary:hover,
   padding-right: 4px;
 }
 
+.selected-topics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.selected-topic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.selected-topic-chip button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text-muted);
+  padding: 0;
+}
+
+.selected-topic-chip button:hover {
+  color: var(--primary);
+}
+
+.topic-option-order {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .topic-picker-list .topic-option {
   padding: 10px 14px;
 }
@@ -1387,6 +1435,13 @@ button.secondary:hover,
   font-size: 0.85rem;
   color: var(--text-muted);
   font-weight: 600;
+}
+
+.topic-progress-label {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .difficulty-badge {
@@ -1781,6 +1836,34 @@ h1 .report-hero-icon {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.breakdown-topic-tag {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.topic-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topic-breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topic-breakdown-name {
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
 }
 
 .breakdown-correctness {

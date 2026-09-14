@@ -21,9 +21,12 @@ export interface LlmCreds {
   llmModel?: string;
 }
 
+/** topics is the ordered "loop" list (1+ entries) — topics[0] also goes in the body's `topic`
+ *  field since the backend keeps that required for backward compatibility with single-topic
+ *  starts; the rest queue up behind it. */
 export function startSession(
   creds: LlmCreds,
-  topic: Topic,
+  topics: Topic[],
   startingDifficulty: Difficulty,
   questionCount: number
 ) {
@@ -33,7 +36,7 @@ export function startSession(
     llmKey: creds.llmKey,
     llmProvider: creds.llmProvider,
     llmModel: creds.llmModel,
-    body: { topic, startingDifficulty, questionCount },
+    body: { topic: topics[0], startingDifficulty, questionCount, topics },
   });
 }
 

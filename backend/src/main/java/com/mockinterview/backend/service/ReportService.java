@@ -4,6 +4,7 @@ import com.mockinterview.backend.dto.CompleteSessionRequest;
 import com.mockinterview.backend.dto.InterviewReportSummary;
 import com.mockinterview.backend.dto.QuestionBreakdown;
 import com.mockinterview.backend.dto.ReportResponse;
+import com.mockinterview.backend.dto.TopicBreakdown;
 import com.mockinterview.backend.entity.*;
 import com.mockinterview.backend.repository.EvaluationRepository;
 import com.mockinterview.backend.repository.ReportRepository;
@@ -14,7 +15,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,6 +27,9 @@ import java.util.stream.Collectors;
  * Phase 1: a simple average + heuristic strong/weak topic split.
  * Phase 4: on first generation, also asks the LLM for a narrative summary and a subtopic-level
  * read of strengths/weaknesses (Report.summaryText, refined strong/weak topics).
+ * Multi-topic loop sessions: strongTopics/weakTopics and the report's per-topic breakdown are both
+ * computed by grouping evaluations by question.getTopic() (each Question keeps its own topic even
+ * after session.topic has moved on) — a single-topic session is just the one-group case of this.
  */
 @Service
 @RequiredArgsConstructor
@@ -99,12 +106,18 @@ public class ReportService {
         report.setQuestionCount(evaluations.size());
         report.setAverageDifficultyReached(averageDifficulty);
 
-        String topicName = session.getTopic().name();
-        if (overallScore >= 70) {
-            report.setStrongTopics(List.of(topicName));
-        } else if (overallScore <= 40) {
-            report.setWeakTopics(List.of(topicName));
+        List<String> strongTopics = new ArrayList<>();
+        List<String> weakTopics = new ArrayList<>();
+        for (Map.Entry<Topic, List<Evaluation>> entry : groupByTopic(evaluations).entrySet()) {
+            double topicAverage = entry.getValue().stream().mapToInt(Evaluation::getScore).average().orElse(0);
+            if (topicAverage >= 70) {
+                strongTopics.add(entry.getKey().name());
+            } else if (topicAverage <= 40) {
+                weakTopics.add(entry.getKey().name());
+            }
         }
+        report.setStrongTopics(strongTopics);
+        report.setWeakTopics(weakTopics);
 
         if (session.isLlmAvailable()) {
             ChatClient chatClient = chatClientFactory.forRequest(apiKey, provider, model);
@@ -143,17 +156,22 @@ public class ReportService {
                 Return your summary using the required structured format only.
                 """;
 
+        String topicsCovered = evaluations.stream()
+                .map(e -> e.getAnswer().getQuestion().getTopic().name())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
         String user = """
-                Topic: %s
+                Topics covered: %s
                 Overall score: %d/100 across %d questions.
 
                 Per-question breakdown:
                 %s
 
-                Based on the breakdown above (not just the overall topic name), identify the specific
+                Based on the breakdown above (not just the overall topic name(s)), identify the specific
                 subtopics the candidate was strongest and weakest in, and write a concise, encouraging
                 but honest 3-5 sentence narrative summary of their performance.
-                """.formatted(session.getTopic(), overallScore, evaluations.size(), breakdown);
+                """.formatted(topicsCovered, overallScore, evaluations.size(), breakdown);
 
         return chatClient.prompt()
                 .system(system)
@@ -170,12 +188,21 @@ public class ReportService {
         List<QuestionBreakdown> breakdown = evaluations.stream()
                 .map(e -> new QuestionBreakdown(
                         e.getAnswer().getQuestion().getSequenceNumber(),
+                        e.getAnswer().getQuestion().getTopic(),
                         e.getAnswer().getQuestion().getPromptText(),
                         e.getAnswer().getQuestion().getDifficulty(),
                         e.getAnswer().getAnswerText(),
                         e.getScore(),
                         e.getCorrectness(),
                         e.getFeedback()
+                ))
+                .toList();
+
+        List<TopicBreakdown> topicBreakdown = groupByTopic(evaluations).entrySet().stream()
+                .map(entry -> new TopicBreakdown(
+                        entry.getKey(),
+                        (int) Math.round(entry.getValue().stream().mapToInt(Evaluation::getScore).average().orElse(0)),
+                        entry.getValue().size()
                 ))
                 .toList();
 
@@ -189,8 +216,17 @@ public class ReportService {
                 report.getQuestionCount(),
                 report.getAverageDifficultyReached(),
                 breakdown,
-                session.getTabSwitchCount()
+                session.getTabSwitchCount(),
+                topicBreakdown
         );
+    }
+
+    /** LinkedHashMap keeps topics in first-appearance (i.e. interview) order — evaluations are
+     *  already loaded ordered by question sequence, so this preserves that instead of an arbitrary
+     *  hash order. A single-topic session naturally groups into just the one entry. */
+    private Map<Topic, List<Evaluation>> groupByTopic(List<Evaluation> evaluations) {
+        return evaluations.stream().collect(Collectors.groupingBy(
+                e -> e.getAnswer().getQuestion().getTopic(), LinkedHashMap::new, Collectors.toList()));
     }
 
     private int difficultyOrdinal(Difficulty difficulty) {

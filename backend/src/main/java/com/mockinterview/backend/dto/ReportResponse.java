@@ -14,6 +14,7 @@ public record ReportResponse(
         int questionCount,
         double averageDifficultyReached,
         List<QuestionBreakdown> breakdown,
-        int tabSwitchCount
+        int tabSwitchCount,
+        List<TopicBreakdown> topicBreakdown
 ) {
 }

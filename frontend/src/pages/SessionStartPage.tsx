@@ -48,10 +48,13 @@ export default function SessionStartPage() {
   const location = useLocation();
   const prefillTopic = (location.state as { prefillTopic?: Topic } | null)?.prefillTopic;
 
-  const { data: topicsByCategory, byTopic } = useTopicCatalog(token);
+  const { data: topicsByCategory, byTopic, label: topicLabel } = useTopicCatalog(token);
   const [topicCategory, setTopicCategory] = useState<Category>("JAVA_BACKEND");
   const [topicFilter, setTopicFilter] = useState("");
-  const [selectedTopic, setSelectedTopic] = useState<Topic>(prefillTopic ?? "");
+  // null (as opposed to []) means "nothing explicitly chosen yet" — the picker still falls back to
+  // defaultTopic below, but an explicit toggle/remove always leaves a real (possibly empty) array,
+  // so clearing the last chip doesn't just silently re-show the default again.
+  const [selectedTopics, setSelectedTopics] = useState<Topic[] | null>(prefillTopic ? [prefillTopic] : null);
   const [difficulty, setDifficulty] = useState<Difficulty>("EASY");
   const [questionCount, setQuestionCount] = useState(8);
   const [timedMode, setTimedMode] = useState(false);
@@ -69,7 +72,16 @@ export default function SessionStartPage() {
   // Once the catalog loads, default to its first topic — derived at render time rather than
   // set from an effect, so picking a topic and loading the catalog both just update state once.
   const defaultTopic = CATEGORIES.map((c) => topicsByCategory?.[c]?.[0]).find(Boolean)?.topic ?? "";
-  const topic = selectedTopic || defaultTopic;
+  const topics: Topic[] = selectedTopics ?? (defaultTopic ? [defaultTopic] : []);
+
+  function toggleTopic(t: Topic) {
+    const base = selectedTopics ?? topics;
+    setSelectedTopics(base.includes(t) ? base.filter((x) => x !== t) : [...base, t]);
+  }
+
+  function removeTopic(t: Topic) {
+    setSelectedTopics(topics.filter((x) => x !== t));
+  }
 
   // If we arrived here via a "Practice this topic again" link, switch to the prefilled topic's
   // own category once the (asynchronously loaded) catalog resolves it, so the right tab is active.
@@ -116,7 +128,10 @@ export default function SessionStartPage() {
     try {
       const res = await recommendTopic({ token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined }, resumeOrJdText);
       setRecommendation(res);
-      setSelectedTopic(res.topic);
+      // The recommendation is a single best-fit topic, so it replaces the whole ordered loop
+      // rather than appending to it — the picker below still lets you add more topics after it
+      // if you want to chain extra rounds onto the recommended one.
+      setSelectedTopics([res.topic]);
       setDifficulty(res.startingDifficulty);
     } catch (err) {
       setRecommendError(err instanceof ApiError ? err.message : "Could not generate a recommendation. Please try again.");
@@ -132,9 +147,9 @@ export default function SessionStartPage() {
     setGuestLimitReached(false);
     setLoading(true);
     try {
-      const res = await startSession({ token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined }, topic, difficulty, questionCount);
+      const res = await startSession({ token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined }, topics, difficulty, questionCount);
       navigate(`/interview/${res.sessionId}`, {
-        state: { firstQuestion: res.firstQuestion, targetQuestionCount: questionCount, timedMode },
+        state: { firstQuestion: res.firstQuestion, targetQuestionCount: questionCount, timedMode, topics },
       });
     } catch (err) {
       if (err instanceof ApiError && err.code === "GUEST_LIMIT_REACHED") {
@@ -156,7 +171,8 @@ export default function SessionStartPage() {
         <h1>Start a mock interview</h1>
         <p className="hint">
           A verbal round comes first — a multiple-choice round, and a live-coding round for topics with
-          coding content, follow automatically with a break in between.
+          coding content, follow automatically with a break in between. Pick more than one topic to chain
+          them into a single loop interview, run in the order you pick them.
         </p>
 
         {guest && (
@@ -197,12 +213,24 @@ export default function SessionStartPage() {
           </details>
 
           <section className="card">
-            <h2>1. Choose a topic</h2>
+            <h2>1. Choose your topic(s)</h2>
             {recommendation && (
               <p className="hint">
                 💡 Recommended based on what you pasted: <strong>{byTopic[recommendation.topic]?.label ?? recommendation.topic}</strong>{" "}
                 ({recommendation.startingDifficulty.toLowerCase()}) — {recommendation.rationale}
               </p>
+            )}
+            {topics.length > 0 && (
+              <div className="selected-topics-row">
+                {topics.map((t, i) => (
+                  <span key={t} className="selected-topic-chip">
+                    {i + 1}. {topicLabel(t)}
+                    <button type="button" onClick={() => removeTopic(t)} aria-label={`Remove ${topicLabel(t)}`}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
             <div className="tab-bar topic-category-bar">
               {CATEGORIES.map((c) => (
@@ -227,21 +255,25 @@ export default function SessionStartPage() {
             />
             <div className="topic-picker-list">
               {filteredTopics.length === 0 && <p className="hint">No topics match "{topicFilter}".</p>}
-              {filteredTopics.map((t) => (
-                <button
-                  type="button"
-                  key={t.topic}
-                  className={topic === t.topic ? "topic-option selected" : "topic-option"}
-                  onClick={() => setSelectedTopic(t.topic)}
-                >
-                  <span className={`topic-icon topic-icon-${topicCategory.toLowerCase()}`} aria-hidden>
-                    {CATEGORY_META[topicCategory].icon}
-                  </span>
-                  <span className="topic-option-text">
-                    <strong>{t.label}</strong>
-                  </span>
-                </button>
-              ))}
+              {filteredTopics.map((t) => {
+                const order = topics.indexOf(t.topic);
+                return (
+                  <button
+                    type="button"
+                    key={t.topic}
+                    className={order >= 0 ? "topic-option selected" : "topic-option"}
+                    onClick={() => toggleTopic(t.topic)}
+                  >
+                    <span className={`topic-icon topic-icon-${topicCategory.toLowerCase()}`} aria-hidden>
+                      {CATEGORY_META[topicCategory].icon}
+                    </span>
+                    <span className="topic-option-text">
+                      <strong>{t.label}</strong>
+                    </span>
+                    {order >= 0 && <span className="topic-option-order">{order + 1}</span>}
+                  </button>
+                );
+              })}
             </div>
           </section>
 
@@ -358,7 +390,7 @@ export default function SessionStartPage() {
             </p>
           )}
 
-          <button type="submit" className="primary start-cta" disabled={loading || !topic || guestLimitReached}>
+          <button type="submit" className="primary start-cta" disabled={loading || topics.length === 0 || guestLimitReached}>
             {loading ? "Starting..." : "Start Interview →"}
           </button>
         </form>

@@ -9,7 +9,8 @@ import { ApiError } from "../api/client";
 import { CodeEditorPane } from "../components/CodeEditorPane";
 import { MicButton } from "../components/MicButton";
 import { RunCodePanel } from "../components/RunCodePanel";
-import type { EvaluationResult, ProgressResponse, QuestionResponse, QuestionType } from "../types/api";
+import { useTopicCatalog } from "../hooks/useTopicCatalog";
+import type { EvaluationResult, ProgressResponse, QuestionResponse, QuestionType, Topic } from "../types/api";
 
 type Phase = "AWAITING_ANSWER" | "SUBMITTING" | "SHOWING_FEEDBACK" | "FINISHING";
 
@@ -17,6 +18,10 @@ interface LocationState {
   firstQuestion: QuestionResponse;
   targetQuestionCount: number;
   timedMode?: boolean;
+  // The ordered topic loop as chosen on the start page — only available on a fresh navigation
+  // (lost on a page refresh, same as the rest of location.state), used purely to show "Topic X of
+  // Y"; the loop itself advances correctly either way since that's driven by the backend.
+  topics?: Topic[];
 }
 
 const QUESTION_TYPE_LABEL: Record<QuestionType, string> = {
@@ -60,12 +65,14 @@ export default function InterviewPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
   const { apiKey, provider, model } = useApiKey();
+  const { label: topicLabel } = useTopicCatalog(token);
 
   const locationState = location.state as LocationState | null;
   const numericSessionId = sessionId ? Number(sessionId) : NaN;
   // Defaults to false for both an older link (no timedMode in state) and a mid-interview refresh
   // (React Router's in-memory location.state doesn't survive a reload).
   const timedMode = locationState?.timedMode ?? false;
+  const topics = locationState?.topics;
 
   const [question, setQuestion] = useState<QuestionResponse | null>(locationState?.firstQuestion ?? null);
   const [progress, setProgress] = useState<ProgressResponse>({
@@ -83,6 +90,8 @@ export default function InterviewPage() {
   const [isLastQuestion, setIsLastQuestion] = useState(false);
   const [sectionComplete, setSectionComplete] = useState(false);
   const [nextSectionType, setNextSectionType] = useState<QuestionType | null>(null);
+  const [nextTopic, setNextTopic] = useState<Topic | null>(null);
+  const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
   const [completedRounds, setCompletedRounds] = useState<Set<QuestionType>>(new Set());
   const [sectionTransitionLoading, setSectionTransitionLoading] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
@@ -219,6 +228,7 @@ export default function InterviewPage() {
       setIsLastQuestion(res.sessionStatus === "COMPLETED");
       setSectionComplete(res.sectionComplete);
       setNextSectionType(res.nextSectionType);
+      setNextTopic(res.nextTopic);
       if (res.sectionComplete && question) {
         setCompletedRounds((prev) => new Set(prev).add(question.questionType));
       }
@@ -251,6 +261,10 @@ export default function InterviewPage() {
       if (question) {
         setCompletedRounds((prev) => new Set(prev).add(question.questionType));
       }
+      if (nextTopic) {
+        setCurrentTopicIndex((i) => i + 1);
+        setCompletedRounds(new Set()); // a fresh topic starts its own verbal/MCQ/coding rounds over
+      }
       const next = await startNextSection(token, numericSessionId);
       setQuestion(next);
       setAnswerText("");
@@ -259,6 +273,7 @@ export default function InterviewPage() {
       setEvaluation(null);
       setSectionComplete(false);
       setNextSectionType(null);
+      setNextTopic(null);
       setPhase("AWAITING_ANSWER");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start the next section. Please try again.");
@@ -294,6 +309,12 @@ export default function InterviewPage() {
         <p className="progress-label">
           Question {Math.min(progress.current + 1, progress.total)} of {progress.total}
         </p>
+
+        {topics && topics.length > 1 && (
+          <p className="topic-progress-label">
+            Topic {currentTopicIndex + 1} of {topics.length}: {topicLabel(question.topic)}
+          </p>
+        )}
 
         <div className="round-stepper">
           {ROUND_ORDER.map((type, i) => {
@@ -463,13 +484,29 @@ export default function InterviewPage() {
                 </button>
               ) : sectionComplete ? (
                 <div className="section-break">
-                  <p className="section-break-title">🎉 {QUESTION_TYPE_LABEL[question.questionType]} round complete</p>
-                  <p className="hint">
-                    Take a breather — start the {nextSectionType ? QUESTION_TYPE_LABEL[nextSectionType] : "next"} round whenever you're ready.
-                  </p>
-                  <button className="primary" onClick={handleStartNextSection} disabled={sectionTransitionLoading}>
-                    {sectionTransitionLoading ? "Loading..." : `Start ${nextSectionType ? QUESTION_TYPE_LABEL[nextSectionType] : "next"} round →`}
-                  </button>
+                  {nextTopic ? (
+                    <>
+                      <p className="section-break-title">🎉 {topicLabel(question.topic)} complete!</p>
+                      <p className="hint">
+                        Next up
+                        {topics && topics.length > 1 ? ` — topic ${currentTopicIndex + 2} of ${topics.length}` : ""}:{" "}
+                        <strong>{topicLabel(nextTopic)}</strong>. Take a breather, then start whenever you're ready.
+                      </p>
+                      <button className="primary" onClick={handleStartNextSection} disabled={sectionTransitionLoading}>
+                        {sectionTransitionLoading ? "Loading..." : `Start ${topicLabel(nextTopic)} →`}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="section-break-title">🎉 {QUESTION_TYPE_LABEL[question.questionType]} round complete</p>
+                      <p className="hint">
+                        Take a breather — start the {nextSectionType ? QUESTION_TYPE_LABEL[nextSectionType] : "next"} round whenever you're ready.
+                      </p>
+                      <button className="primary" onClick={handleStartNextSection} disabled={sectionTransitionLoading}>
+                        {sectionTransitionLoading ? "Loading..." : `Start ${nextSectionType ? QUESTION_TYPE_LABEL[nextSectionType] : "next"} round →`}
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 <button className="primary" onClick={handleNext}>

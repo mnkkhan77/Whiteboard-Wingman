@@ -3,6 +3,7 @@ package com.mockinterview.backend.service;
 import com.mockinterview.backend.dto.CompleteSessionRequest;
 import com.mockinterview.backend.dto.InterviewReportSummary;
 import com.mockinterview.backend.dto.ReportResponse;
+import com.mockinterview.backend.dto.TopicBreakdown;
 import com.mockinterview.backend.entity.*;
 import com.mockinterview.backend.repository.EvaluationRepository;
 import com.mockinterview.backend.repository.ReportRepository;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -51,9 +53,14 @@ class ReportServiceTest {
     }
 
     private Evaluation evaluationWithScore(InterviewSession session, int sequenceNumber, int score) {
+        return evaluationWithScore(session, session.getTopic(), sequenceNumber, score);
+    }
+
+    private Evaluation evaluationWithScore(InterviewSession session, Topic topic, int sequenceNumber, int score) {
         Question question = new Question();
         question.setSession(session);
         question.setSequenceNumber(sequenceNumber);
+        question.setTopic(topic);
         question.setDifficulty(Difficulty.EASY);
         question.setPromptText("Q" + sequenceNumber);
 
@@ -138,6 +145,34 @@ class ReportServiceTest {
         assertThat(response.overallScore()).isEqualTo(20);
         assertThat(response.weakTopics()).containsExactly("DSA");
         assertThat(response.strongTopics()).isEmpty();
+    }
+
+    @Test
+    void completeSessionGroupsStrongAndWeakTopicsPerTopicAcrossAMultiTopicSession() {
+        user = new User();
+        user.setId(1L);
+        // session.topic reflects wherever the loop ended up (SYSTEM_DESIGN, the last topic run) —
+        // the report must still credit/flag DSA and SYSTEM_DESIGN separately, not just that one.
+        InterviewSession session = completedSession(3);
+        session.setTopic(Topic.SYSTEM_DESIGN);
+        when(sessionService.getOwnedSession(user, 1L)).thenReturn(session);
+        when(reportRepository.findBySession(session)).thenReturn(Optional.empty());
+        when(evaluationRepository.findBySessionOrderByQuestionSequence(session)).thenReturn(List.of(
+                evaluationWithScore(session, Topic.DSA, 1, 90),
+                evaluationWithScore(session, Topic.DSA, 2, 80),
+                evaluationWithScore(session, Topic.SYSTEM_DESIGN, 3, 20)));
+        when(reportRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        stubNarrativeToReturn(new InterviewReportSummary(List.of(), List.of(), "Mixed performance across topics."));
+
+        ReportResponse response = complete(1L);
+
+        assertThat(response.strongTopics()).containsExactly("DSA");
+        assertThat(response.weakTopics()).containsExactly("SYSTEM_DESIGN");
+        assertThat(response.topicBreakdown())
+                .extracting(TopicBreakdown::topic, TopicBreakdown::averageScore, TopicBreakdown::questionCount)
+                .containsExactly(
+                        tuple(Topic.DSA, 85, 2),
+                        tuple(Topic.SYSTEM_DESIGN, 20, 1));
     }
 
     @Test

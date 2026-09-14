@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "interview_sessions")
@@ -39,6 +41,17 @@ public class InterviewSession {
 
     @Column(nullable = false)
     private int questionsAsked = 0;
+
+    /** Topics still queued after the currently-active one (topic, above) — a multi-topic "loop"
+     *  session pops the next one in here into topic once topic's own sections are exhausted,
+     *  resetting currentDifficulty back to startingDifficulty for the fresh topic. Empty for a
+     *  single-topic session, which behaves exactly as it always has. */
+    @ElementCollection
+    @CollectionTable(name = "interview_session_topic_queue", joinColumns = @JoinColumn(name = "session_id"))
+    @OrderColumn(name = "queue_index")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "topic", nullable = false, length = 30)
+    private List<Topic> topicQueue = new ArrayList<>();
 
     /** Times the candidate's browser tab lost focus/visibility mid-interview — a lightweight
      *  integrity signal for the report, not an enforcement mechanism (nothing blocks on it). */

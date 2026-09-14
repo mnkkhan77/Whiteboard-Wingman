@@ -29,17 +29,35 @@ interface ReportViewProps {
 
 /** The read-only score/breakdown display shared by the owner's ReportPage and the public,
  *  token-based PublicReportPage — everything account-specific (share controls, nav, "practice
- *  again" actions) stays in the pages that wrap this. */
+ *  again" actions) stays in the pages that wrap this.
+ *
+ *  A multi-topic "loop" session (topicBreakdown carries 2+ entries) additionally gets a generic
+ *  header naming the topic chain, a per-topic score section, and a topic tag on every question;
+ *  a single-topic report renders exactly as it always has, since every one of those extras is
+ *  redundant when there's only one topic to attribute things to. */
 export function ReportView({ report, topicLabel, categoryIcon, categoryClass }: ReportViewProps) {
+  const isMultiTopic = report.topicBreakdown.length > 1;
+
   return (
     <>
       <p className="eyebrow">Report</p>
       <h1>
-        <span className={`topic-icon topic-icon-${categoryClass ?? "default"} report-hero-icon`} aria-hidden>
-          {categoryIcon ?? "💡"}
-        </span>
-        {topicLabel(report.topic)} interview
+        {isMultiTopic ? (
+          <>🔁 Multi-topic interview</>
+        ) : (
+          <>
+            <span className={`topic-icon topic-icon-${categoryClass ?? "default"} report-hero-icon`} aria-hidden>
+              {categoryIcon ?? "💡"}
+            </span>
+            {topicLabel(report.topic)} interview
+          </>
+        )}
       </h1>
+      {isMultiTopic && (
+        <p className="hint">
+          {report.topicBreakdown.map((t) => topicLabel(t.topic)).join(" → ")}
+        </p>
+      )}
 
       <div className="card report-hero">
         <div className="score-ring" style={{ "--pct": Math.max(0, Math.min(100, report.overallScore)) } as CSSProperties}>
@@ -90,6 +108,21 @@ export function ReportView({ report, topicLabel, categoryIcon, categoryClass }: 
         </div>
       </div>
 
+      {isMultiTopic && (
+        <>
+          <h2>Topic breakdown</h2>
+          <div className="topic-breakdown-list">
+            {report.topicBreakdown.map((t) => (
+              <div key={t.topic} className="card topic-breakdown-item">
+                <span className="topic-breakdown-name">{topicLabel(t.topic)}</span>
+                <span className={`score-badge score-badge-${scoreTier(t.averageScore)}`}>{t.averageScore}/100</span>
+                <span className="hint">{t.questionCount} question{t.questionCount === 1 ? "" : "s"}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <h2>Question breakdown</h2>
       <div className="breakdown-list">
         {report.breakdown.map((q) => (
@@ -97,6 +130,7 @@ export function ReportView({ report, topicLabel, categoryIcon, categoryClass }: 
             <summary>
               <span className="breakdown-summary-row">
                 <span>Q{q.sequenceNumber}</span>
+                {isMultiTopic && <span className="breakdown-topic-tag">{topicLabel(q.topic)}</span>}
                 <span className={`difficulty-badge difficulty-${q.difficulty.toLowerCase()}`}>{q.difficulty}</span>
                 <span className={`score-badge score-badge-${scoreTier(q.score)}`}>{q.score}/100</span>
                 <span className="breakdown-correctness">{CORRECTNESS_LABEL[q.correctness]}</span>

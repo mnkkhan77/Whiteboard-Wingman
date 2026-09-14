@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -261,6 +262,99 @@ class InterviewSessionServiceTest {
         verify(questionBank, never()).pickNext(any(), any(), any(), anySet());
         assertThat(session.getStatus()).isEqualTo(SessionStatus.COMPLETED);
         assertThat(session.getCompletedAt()).isNotNull();
+    }
+
+    @Test
+    void startSessionWithMultipleTopicsQueuesTheRestAndCountsAllOfThemInTheGrandTotal() {
+        stubNoMcqOrCodingContent();
+        when(sessionRepository.save(any())).thenAnswer(inv -> {
+            InterviewSession s = inv.getArgument(0);
+            s.setId(1L);
+            return s;
+        });
+        when(chatClientFactory.forRequest(anyString(), any(), any())).thenReturn(chatClient);
+        when(questionRepository.findBySessionOrderBySequenceNumberAsc(any())).thenReturn(List.of());
+        when(questionSelectionService.pickNext(eq(Topic.DSA), eq(Difficulty.EASY), anySet())).thenReturn(Optional.empty());
+        when(questionBank.pickNext(eq(Topic.DSA), eq(Difficulty.EASY), eq(QuestionType.CONCEPTUAL), anySet()))
+                .thenReturn(conceptualEntry("dsa-e1", Difficulty.EASY, "Two Sum"));
+        when(questionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        StartSessionRequest request = new StartSessionRequest(
+                Topic.DSA, Difficulty.EASY, 2, List.of(Topic.DSA, Topic.SYSTEM_DESIGN));
+        SessionStartResponse response = service.startSession(
+                user, request, "fake-key", PerRequestChatClientFactory.Provider.GROQ, null);
+
+        assertThat(response.firstQuestion().topic()).isEqualTo(Topic.DSA);
+        verify(sessionRepository).save(argThat(s ->
+                s.getTopic() == Topic.DSA && s.getTopicQueue().equals(List.of(Topic.SYSTEM_DESIGN))));
+    }
+
+    @Test
+    void multiTopicSessionAdvancesToTheNextTopicResettingDifficultyOnceTheCurrentTopicsSectionsAreExhausted() {
+        stubNoMcqOrCodingContent(); // neither topic has MCQ/CODING content -> verbal-only for both
+        InterviewSession session = newSession(0, 1, SessionStatus.IN_PROGRESS); // target 1: one verbal question finishes DSA
+        session.setTopicQueue(new ArrayList<>(List.of(Topic.SYSTEM_DESIGN)));
+        Question currentQuestion = newQuestion(session, 1); // DSA, CONCEPTUAL, EASY
+
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        when(questionRepository.findTopBySessionOrderBySequenceNumberDesc(session)).thenReturn(Optional.of(currentQuestion));
+        when(answerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(evaluationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(evaluationRepository.findBySessionOrderByQuestionSequence(session)).thenReturn(List.of());
+        // Simulates difficulty having drifted up during the DSA topic — the topic switch must reset it.
+        when(adaptiveDifficultyService.computeNext(Difficulty.EASY, 80, DifficultyDelta.SAME, false)).thenReturn(Difficulty.HARD);
+        when(questionRepository.findBySessionOrderBySequenceNumberAsc(session)).thenReturn(List.of(currentQuestion));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        stubChatClientToReturn(new EvaluationResult(
+                80, Correctness.CORRECT, "Good.", List.of(), List.of(), DifficultyDelta.SAME));
+
+        AnswerSubmitResponse response = service.submitAnswer(
+                user, 1L, new SubmitAnswerRequest("An answer.", null, null, null),
+                "fake-key", PerRequestChatClientFactory.Provider.GROQ, null);
+
+        assertThat(response.sessionStatus()).isEqualTo(SessionStatus.IN_PROGRESS); // not done — SYSTEM_DESIGN is still queued
+        assertThat(response.sectionComplete()).isTrue();
+        assertThat(response.nextSectionType()).isEqualTo(QuestionType.CONCEPTUAL);
+        assertThat(response.nextTopic()).isEqualTo(Topic.SYSTEM_DESIGN);
+        assertThat(response.nextQuestion()).isNull(); // waiting for startNextSection, same as an in-topic section break
+        assertThat(response.progress().total()).isEqualTo(2); // 1 (DSA) + 1 (SYSTEM_DESIGN), from the very first question onward
+
+        assertThat(session.getTopic()).isEqualTo(Topic.SYSTEM_DESIGN);
+        assertThat(session.getTopicQueue()).isEmpty();
+        assertThat(session.getCurrentDifficulty()).isEqualTo(Difficulty.EASY); // reset, not the drifted HARD
+    }
+
+    @Test
+    void sessionOnlyCompletesOnceTheLastQueuedTopicsLastSectionFinishes() {
+        stubNoMcqOrCodingContent();
+        InterviewSession session = newSession(1, 1, SessionStatus.IN_PROGRESS); // already advanced onto the final topic
+        session.setTopic(Topic.SYSTEM_DESIGN);
+        Question currentQuestion = newQuestion(session, 2);
+        currentQuestion.setTopic(Topic.SYSTEM_DESIGN);
+
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        when(questionRepository.findTopBySessionOrderBySequenceNumberDesc(session)).thenReturn(Optional.of(currentQuestion));
+        when(answerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(evaluationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(evaluationRepository.findBySessionOrderByQuestionSequence(session)).thenReturn(List.of());
+        when(adaptiveDifficultyService.computeNext(any(), anyInt(), any(), anyBoolean())).thenReturn(Difficulty.EASY);
+        Question priorDsaQuestion = newQuestion(session, 1);
+        when(questionRepository.findBySessionOrderBySequenceNumberAsc(session)).thenReturn(List.of(priorDsaQuestion, currentQuestion));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        stubChatClientToReturn(new EvaluationResult(
+                70, Correctness.CORRECT, "Fine.", List.of(), List.of(), DifficultyDelta.SAME));
+
+        AnswerSubmitResponse response = service.submitAnswer(
+                user, 1L, new SubmitAnswerRequest("An answer.", null, null, null),
+                "fake-key", PerRequestChatClientFactory.Provider.GROQ, null);
+
+        assertThat(response.sessionStatus()).isEqualTo(SessionStatus.COMPLETED);
+        assertThat(response.nextTopic()).isNull();
+        assertThat(response.sectionComplete()).isFalse();
+        assertThat(session.getStatus()).isEqualTo(SessionStatus.COMPLETED);
+        verify(questionBank, never()).pickNext(any(), any(), any(), anySet());
     }
 
     @Test

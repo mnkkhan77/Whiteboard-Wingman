@@ -3,12 +3,14 @@ package com.mockinterview.backend.dto;
 import com.mockinterview.backend.entity.Difficulty;
 import com.mockinterview.backend.entity.Question;
 import com.mockinterview.backend.entity.QuestionType;
+import com.mockinterview.backend.entity.Topic;
 
 import java.util.List;
 
 public record QuestionResponse(
         Long id,
         int sequenceNumber,
+        Topic topic,
         String promptText,
         QuestionType questionType,
         Difficulty difficulty,
@@ -24,7 +26,7 @@ public record QuestionResponse(
 
     public static QuestionResponse from(Question q) {
         return new QuestionResponse(
-                q.getId(), q.getSequenceNumber(), q.getPromptText(), q.getQuestionType(), q.getDifficulty(),
+                q.getId(), q.getSequenceNumber(), q.getTopic(), q.getPromptText(), q.getQuestionType(), q.getDifficulty(),
                 // List.copyOf forces the lazy collection to actually load here, while the caller's
                 // transaction is still open — q.getOptions() alone would just hand back an
                 // uninitialized Hibernate proxy that blows up later when Jackson serializes it,
