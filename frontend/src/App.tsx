@@ -8,6 +8,7 @@ import { AdminRoute } from "./components/AdminRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
+import ProgressPage from "./pages/ProgressPage";
 import SessionStartPage from "./pages/SessionStartPage";
 import InterviewPage from "./pages/InterviewPage";
 import ReportPage from "./pages/ReportPage";
@@ -42,6 +43,7 @@ export default function App() {
 
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
                 <Route path="/sessions/new" element={<SessionStartPage />} />
                 <Route path="/interview/:sessionId" element={<InterviewPage />} />
                 <Route path="/sessions/:sessionId/report" element={<ReportPage />} />

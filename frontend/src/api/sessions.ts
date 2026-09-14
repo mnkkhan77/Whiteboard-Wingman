@@ -4,6 +4,7 @@ import type {
   CodeRunResponse,
   Difficulty,
   LlmProvider,
+  PersonalProgressResponse,
   QuestionResponse,
   ReportResponse,
   SessionResumeResponse,
@@ -94,4 +95,9 @@ export function listSessions(token: string) {
  *  page refresh, since React Router's in-memory navigation state doesn't survive a reload. */
 export function getResumeState(token: string, sessionId: number) {
   return apiFetch<SessionResumeResponse>(`/sessions/${sessionId}/current`, { token });
+}
+
+/** A signed-in user's own score trend and per-topic averages, for the personal progress dashboard. */
+export function getProgress(token: string) {
+  return apiFetch<PersonalProgressResponse>("/sessions/progress", { token });
 }

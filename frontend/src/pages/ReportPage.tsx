@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
@@ -31,6 +31,7 @@ const CORRECTNESS_LABEL: Record<Correctness, string> = {
 export default function ReportPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { byTopic, label: topicLabel } = useTopicCatalog(token);
@@ -165,6 +166,15 @@ export default function ReportPage() {
         </div>
 
         <div className="report-actions">
+          {report.overallScore < 70 && (
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => navigate("/sessions/new", { state: { prefillTopic: report.topic } })}
+            >
+              Practice this topic again
+            </button>
+          )}
           <Link to="/sessions/new" className="button primary start-cta">
             Start Another Interview
           </Link>

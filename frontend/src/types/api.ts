@@ -181,3 +181,18 @@ export interface TopicSummary {
 }
 
 export type TopicsByCategory = Partial<Record<Category, TopicSummary[]>>;
+
+export interface ScorePoint {
+  sessionId: number;
+  topic: Topic;
+  completedAt: string;
+  overallScore: number;
+}
+
+export interface PersonalProgressResponse {
+  scoreTrend: ScorePoint[];
+  averageScoreByTopic: Partial<Record<Topic, number>>;
+  totalSessions: number;
+  completedSessions: number;
+  overallAverageScore: number | null;
+}

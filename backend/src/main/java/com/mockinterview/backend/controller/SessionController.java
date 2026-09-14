@@ -6,6 +6,7 @@ import com.mockinterview.backend.repository.UserRepository;
 import com.mockinterview.backend.service.InterviewSessionService;
 import com.mockinterview.backend.service.PerRequestChatClientFactory;
 import com.mockinterview.backend.service.PerRequestChatClientFactory.Provider;
+import com.mockinterview.backend.service.PersonalStatsService;
 import com.mockinterview.backend.service.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class SessionController {
 
     private final InterviewSessionService interviewSessionService;
     private final ReportService reportService;
+    private final PersonalStatsService personalStatsService;
     private final UserRepository userRepository;
 
     @PostMapping
@@ -78,6 +80,12 @@ public class SessionController {
     @GetMapping
     public List<SessionSummaryResponse> listSessions(Authentication auth) {
         return interviewSessionService.listSessions(resolveUser(auth));
+    }
+
+    // Resolved before the sibling "/{id}" mapping below for this literal path segment — no routing collision.
+    @GetMapping("/progress")
+    public PersonalProgressResponse getProgress(Authentication auth) {
+        return personalStatsService.getProgress(resolveUser(auth));
     }
 
     private Provider parseProvider(String raw) {
