@@ -105,7 +105,7 @@ export default function ReportPage() {
                 <span className="tag-row-label">Strong:</span>
                 <div className="tag-list">
                   {report.strongTopics.map((t) => (
-                    <span key={t} className="tag tag-strong">{t}</span>
+                    <span key={t} className="tag tag-strong">{topicLabel(t)}</span>
                   ))}
                 </div>
               </div>
@@ -115,7 +115,7 @@ export default function ReportPage() {
                 <span className="tag-row-label">Needs work:</span>
                 <div className="tag-list">
                   {report.weakTopics.map((t) => (
-                    <span key={t} className="tag tag-weak">{t}</span>
+                    <span key={t} className="tag tag-weak">{topicLabel(t)}</span>
                   ))}
                 </div>
               </div>
