@@ -5,10 +5,11 @@ import { useApiKey } from "../context/ApiKeyContext";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { startSession } from "../api/sessions";
+import { recommendTopic } from "../api/topics";
 import { ApiError } from "../api/client";
 import { useTopicCatalog } from "../hooks/useTopicCatalog";
 import { CATEGORY_META } from "../constants/topicCategories";
-import type { Category, Difficulty, Topic } from "../types/api";
+import type { Category, Difficulty, Topic, TopicRecommendationResponse } from "../types/api";
 
 const CATEGORIES: Category[] = ["JAVA_BACKEND", "REACT_FRONTEND", "AI_ENGINEERING"];
 
@@ -57,6 +58,10 @@ export default function SessionStartPage() {
   const [error, setError] = useState<string | null>(null);
   const [guestLimitReached, setGuestLimitReached] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resumeOrJdText, setResumeOrJdText] = useState("");
+  const [recommendation, setRecommendation] = useState<TopicRecommendationResponse | null>(null);
+  const [recommendError, setRecommendError] = useState<string | null>(null);
+  const [recommending, setRecommending] = useState(false);
   const [useCustomModel, setUseCustomModel] = useState(
     () => model !== "" && !MODEL_PRESETS[provider].some((m) => m.value === model)
   );
@@ -72,6 +77,13 @@ export default function SessionStartPage() {
   useEffect(() => {
     if (prefillCategory) setTopicCategory(prefillCategory);
   }, [prefillCategory]);
+
+  // Same idea, but for a topic the LLM just recommended from a pasted resume/JD instead of a
+  // router-state prefill — switch to its category once the catalog resolves it.
+  const recommendedCategory = recommendation ? byTopic[recommendation.topic]?.category : undefined;
+  useEffect(() => {
+    if (recommendedCategory) setTopicCategory(recommendedCategory);
+  }, [recommendedCategory]);
 
   const topicsInCategory = topicsByCategory?.[topicCategory] ?? [];
   const filteredTopics = topicFilter.trim()
@@ -94,6 +106,22 @@ export default function SessionStartPage() {
     } else {
       setUseCustomModel(false);
       setModel(value);
+    }
+  }
+
+  async function handleRecommend() {
+    if (!token) return;
+    setRecommendError(null);
+    setRecommending(true);
+    try {
+      const res = await recommendTopic({ token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined }, resumeOrJdText);
+      setRecommendation(res);
+      setSelectedTopic(res.topic);
+      setDifficulty(res.startingDifficulty);
+    } catch (err) {
+      setRecommendError(err instanceof ApiError ? err.message : "Could not generate a recommendation. Please try again.");
+    } finally {
+      setRecommending(false);
     }
   }
 
@@ -139,8 +167,43 @@ export default function SessionStartPage() {
         )}
 
         <form className="session-start-form" onSubmit={handleSubmit}>
+          <details className="card">
+            <summary>Tailor to a resume or job description <span className="hint">(optional)</span></summary>
+            <p className="hint">
+              Paste your resume or a job description below and we'll suggest which topic and starting
+              difficulty to practice.
+            </p>
+            <textarea
+              value={resumeOrJdText}
+              onChange={(e) => setResumeOrJdText(e.target.value)}
+              rows={6}
+              placeholder="Paste your resume or a job description here…"
+            />
+            {!apiKey.trim() && (
+              <p className="keyless-warning">
+                ⚠ Add your LLM API key in section 3 below to enable a recommendation — this feature
+                always needs one.
+              </p>
+            )}
+            {recommendError && <p className="error-text">{recommendError}</p>}
+            <button
+              type="button"
+              className="secondary"
+              disabled={recommending || !apiKey.trim() || !resumeOrJdText.trim()}
+              onClick={handleRecommend}
+            >
+              {recommending ? "Analyzing…" : "Recommend a topic"}
+            </button>
+          </details>
+
           <section className="card">
             <h2>1. Choose a topic</h2>
+            {recommendation && (
+              <p className="hint">
+                💡 Recommended based on what you pasted: <strong>{byTopic[recommendation.topic]?.label ?? recommendation.topic}</strong>{" "}
+                ({recommendation.startingDifficulty.toLowerCase()}) — {recommendation.rationale}
+              </p>
+            )}
             <div className="tab-bar topic-category-bar">
               {CATEGORIES.map((c) => (
                 <button
