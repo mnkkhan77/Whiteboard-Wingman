@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +53,30 @@ public class ReportService {
         InterviewSession session = sessionService.getOwnedSession(user, sessionId);
         Report report = reportRepository.findBySession(session)
                 .orElseThrow(() -> new IllegalStateException("Report not generated yet — call POST /sessions/{id}/complete first"));
+        return toResponse(session, report, loadEvaluations(session));
+    }
+
+    /** Lazily mints a share token the first time it's requested; idempotent on repeat calls. */
+    @Transactional
+    public String shareReport(User user, Long sessionId) {
+        InterviewSession session = sessionService.getOwnedSession(user, sessionId);
+        Report report = reportRepository.findBySession(session)
+                .orElseThrow(() -> new IllegalStateException("Report not generated yet — call POST /sessions/{id}/complete first"));
+
+        if (report.getShareToken() == null) {
+            report.setShareToken(UUID.randomUUID().toString());
+            reportRepository.save(report);
+        }
+        return report.getShareToken();
+    }
+
+    /** Resolves a report by its public share token only — never by session id — so an unknown
+     *  token can't be used to probe for the existence of a given session. */
+    @Transactional(readOnly = true)
+    public ReportResponse getPublicReport(String shareToken) {
+        Report report = reportRepository.findByShareToken(shareToken)
+                .orElseThrow(() -> new NoSuchElementException("Report not found"));
+        InterviewSession session = report.getSession();
         return toResponse(session, report, loadEvaluations(session));
     }
 

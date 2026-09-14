@@ -11,7 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.SimpleVectorStore;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ContentIngestionServiceTest {
 
-    @Mock private VectorStore vectorStore;
+    @Mock private SimpleVectorStore vectorStore;
     @Mock private TopicCatalogService topicCatalogService;
 
     private static final List<TopicCatalogEntry> CLASSPATH_CATALOG = List.of(

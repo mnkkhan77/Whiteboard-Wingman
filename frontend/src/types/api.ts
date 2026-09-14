@@ -27,6 +27,7 @@ export interface TestCase {
 export interface QuestionResponse {
   id: number;
   sequenceNumber: number;
+  topic: Topic;
   promptText: string;
   questionType: QuestionType;
   difficulty: Difficulty;
@@ -61,6 +62,9 @@ export interface AnswerSubmitResponse {
   progress: ProgressResponse;
   sectionComplete: boolean;
   nextSectionType: QuestionType | null;
+  // Non-null only when the upcoming section also belongs to a different (queued) topic — a topic
+  // transition, not just a section transition within the same topic.
+  nextTopic: Topic | null;
 }
 
 export interface SessionResumeResponse {
@@ -68,6 +72,8 @@ export interface SessionResumeResponse {
   progress: ProgressResponse;
   currentQuestion: QuestionResponse | null;
   pendingSectionType: QuestionType | null;
+  topic: Topic;
+  topicsRemaining: number;
 }
 
 export interface CodeRunTestCaseResult {
@@ -96,12 +102,19 @@ export interface SessionSummaryResponse {
 
 export interface QuestionBreakdown {
   sequenceNumber: number;
+  topic: Topic;
   promptText: string;
   difficulty: Difficulty;
   answerText: string;
   score: number;
   correctness: Correctness;
   feedback: string;
+}
+
+export interface TopicBreakdown {
+  topic: Topic;
+  averageScore: number;
+  questionCount: number;
 }
 
 export interface ReportResponse {
@@ -115,6 +128,11 @@ export interface ReportResponse {
   averageDifficultyReached: number;
   breakdown: QuestionBreakdown[];
   tabSwitchCount: number;
+  topicBreakdown: TopicBreakdown[];
+}
+
+export interface ShareTokenResponse {
+  shareToken: string;
 }
 
 export interface AdminUserSummary {
@@ -181,6 +199,12 @@ export interface TopicSummary {
 }
 
 export type TopicsByCategory = Partial<Record<Category, TopicSummary[]>>;
+
+export interface TopicRecommendationResponse {
+  topic: Topic;
+  startingDifficulty: Difficulty;
+  rationale: string;
+}
 
 export interface ScorePoint {
   sessionId: number;

@@ -62,6 +62,11 @@ public class SessionController {
         return reportService.getReport(resolveUser(auth), id);
     }
 
+    @PostMapping("/{id}/report/share")
+    public ShareTokenResponse shareReport(@PathVariable Long id, Authentication auth) {
+        return new ShareTokenResponse(reportService.shareReport(resolveUser(auth), id));
+    }
+
     @GetMapping("/{id}")
     public SessionSummaryResponse getSession(@PathVariable Long id, Authentication auth) {
         return interviewSessionService.getSession(resolveUser(auth), id);

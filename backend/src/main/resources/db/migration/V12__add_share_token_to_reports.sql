@@ -1,0 +1,1 @@
+ALTER TABLE reports ADD COLUMN share_token VARCHAR(36) NULL UNIQUE;

@@ -8,6 +8,7 @@ import type {
   QuestionResponse,
   ReportResponse,
   SessionResumeResponse,
+  ShareTokenResponse,
   SessionStartResponse,
   SessionSummaryResponse,
   Topic,
@@ -85,6 +86,16 @@ export function runCode(token: string, questionId: number, language: string, cod
 
 export function getReport(token: string, sessionId: number) {
   return apiFetch<ReportResponse>(`/sessions/${sessionId}/report`, { token });
+}
+
+/** Lazily mints (or re-fetches) the report's public share token — idempotent on the backend. */
+export function shareReport(token: string, sessionId: number) {
+  return apiFetch<ShareTokenResponse>(`/sessions/${sessionId}/report/share`, { method: "POST", token });
+}
+
+/** Unauthenticated lookup by share token, for the public report page — no auth token is sent. */
+export function getPublicReport(shareToken: string) {
+  return apiFetch<ReportResponse>(`/public/reports/${shareToken}`);
 }
 
 export function listSessions(token: string) {

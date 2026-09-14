@@ -12,6 +12,7 @@ import ProgressPage from "./pages/ProgressPage";
 import SessionStartPage from "./pages/SessionStartPage";
 import InterviewPage from "./pages/InterviewPage";
 import ReportPage from "./pages/ReportPage";
+import PublicReportPage from "./pages/PublicReportPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminUserDetailPage from "./pages/AdminUserDetailPage";
 
@@ -40,6 +41,8 @@ export default function App() {
                   </>
                 }
               />
+
+              <Route path="/report/shared/:token" element={<PublicReportPage />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<DashboardPage />} />

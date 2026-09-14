@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -229,5 +230,90 @@ class ReportServiceTest {
 
         assertThatThrownBy(() -> reportService.getReport(user, 1L))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shareReportGeneratesATokenOnFirstCallAndPersistsIt() {
+        user = new User();
+        user.setId(1L);
+        InterviewSession session = completedSession(1);
+        Report report = new Report();
+        report.setSession(session);
+        when(sessionService.getOwnedSession(user, 1L)).thenReturn(session);
+        when(reportRepository.findBySession(session)).thenReturn(Optional.of(report));
+
+        String token = reportService.shareReport(user, 1L);
+
+        assertThat(token).isNotBlank();
+        assertThat(report.getShareToken()).isEqualTo(token);
+        verify(reportRepository, times(1)).save(report);
+    }
+
+    @Test
+    void shareReportIsIdempotentAndReusesTheExistingToken() {
+        user = new User();
+        user.setId(1L);
+        InterviewSession session = completedSession(1);
+        Report report = new Report();
+        report.setSession(session);
+        report.setShareToken("already-shared-token");
+        when(sessionService.getOwnedSession(user, 1L)).thenReturn(session);
+        when(reportRepository.findBySession(session)).thenReturn(Optional.of(report));
+
+        String token = reportService.shareReport(user, 1L);
+
+        assertThat(token).isEqualTo("already-shared-token");
+        verify(reportRepository, never()).save(any());
+    }
+
+    @Test
+    void shareReportThrowsWhenNoReportHasBeenGeneratedYet() {
+        user = new User();
+        user.setId(1L);
+        InterviewSession session = completedSession(1);
+        when(sessionService.getOwnedSession(user, 1L)).thenReturn(session);
+        when(reportRepository.findBySession(session)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reportService.shareReport(user, 1L))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shareReportPropagatesTheOwnershipCheckFromGetOwnedSession() {
+        user = new User();
+        user.setId(1L);
+        when(sessionService.getOwnedSession(user, 1L))
+                .thenThrow(new IllegalArgumentException("Session not found"));
+
+        assertThatThrownBy(() -> reportService.shareReport(user, 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(reportRepository);
+    }
+
+    @Test
+    void getPublicReportReturnsReportDataForAKnownToken() {
+        InterviewSession session = completedSession(1);
+        Report report = new Report();
+        report.setSession(session);
+        report.setOverallScore(88);
+        report.setQuestionCount(1);
+        report.setShareToken("public-token");
+        when(reportRepository.findByShareToken("public-token")).thenReturn(Optional.of(report));
+        when(evaluationRepository.findBySessionOrderByQuestionSequence(session))
+                .thenReturn(List.of(evaluationWithScore(session, 1, 88)));
+
+        ReportResponse response = reportService.getPublicReport("public-token");
+
+        assertThat(response.overallScore()).isEqualTo(88);
+        assertThat(response.sessionId()).isEqualTo(session.getId());
+    }
+
+    @Test
+    void getPublicReportThrowsNotFoundForAnUnknownToken() {
+        when(reportRepository.findByShareToken("missing-token")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reportService.getPublicReport("missing-token"))
+                .isInstanceOf(NoSuchElementException.class);
     }
 }

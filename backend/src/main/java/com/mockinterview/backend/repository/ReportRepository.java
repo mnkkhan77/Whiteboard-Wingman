@@ -11,4 +11,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     Optional<Report> findBySession(InterviewSession session);
 
     List<Report> findBySessionIn(List<InterviewSession> sessions);
+
+    Optional<Report> findByShareToken(String shareToken);
 }

@@ -1897,6 +1897,46 @@ h1 .report-hero-icon {
   gap: 16px;
 }
 
+.report-share-section {
+  gap: 14px;
+}
+
+.report-share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.report-share-header h3 {
+  margin: 0;
+}
+
+.share-link-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.share-link-row input {
+  flex: 1;
+  min-width: 220px;
+  font: inherit;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+.public-report-header {
+  display: flex;
+  align-items: center;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border);
+}
+
 /* --- Loading & error states --- */
 
 .state-card {
@@ -1951,5 +1991,44 @@ h1 .report-hero-icon {
 @keyframes spinner-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* --- Report: print / "Export PDF" (window.print(), no PDF library) --- */
+
+@media print {
+  .navbar,
+  .app-footer,
+  .public-report-header,
+  .report-share-section,
+  .report-actions,
+  .theme-toggle-floating {
+    display: none !important;
+  }
+
+  .page {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+
+  /* <details> collapse their body natively; force every breakdown item open so the full
+     question/answer/feedback content is present in the printed/exported page. */
+  .breakdown-item:not([open]) > *:not(summary) {
+    display: block !important;
+  }
+
+  .breakdown-item summary {
+    list-style: none;
+  }
+
+  .breakdown-item summary::-webkit-details-marker {
+    display: none;
   }
 }

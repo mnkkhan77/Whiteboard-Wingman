@@ -46,6 +46,10 @@ public class Report {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** Null until the owner first requests a public share link — generated lazily, see ReportService. */
+    @Column(unique = true)
+    private String shareToken;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
