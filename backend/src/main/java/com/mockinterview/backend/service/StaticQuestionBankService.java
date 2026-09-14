@@ -1,5 +1,6 @@
 package com.mockinterview.backend.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mockinterview.backend.dto.StaticQuestionEntry;
 import com.mockinterview.backend.dto.TopicCatalogEntry;
@@ -8,10 +9,12 @@ import com.mockinterview.backend.entity.QuestionType;
 import com.mockinterview.backend.entity.Topic;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +45,9 @@ public class StaticQuestionBankService {
     private final TopicCatalogService topicCatalogService;
     private final Map<Topic, List<StaticQuestionEntry>> bank = new ConcurrentHashMap<>();
 
+    @Value("${app.mcq-bank-cache-path:./data/mcq-bank-cache.json}")
+    private String mcqBankCachePath;
+
     public StaticQuestionBankService(TopicCatalogService topicCatalogService) {
         this.topicCatalogService = topicCatalogService;
     }
@@ -57,6 +63,42 @@ public class StaticQuestionBankService {
                 throw new IllegalStateException("Failed to load question bank for topic " + topic, e);
             }
         });
+        loadRemoteBankCache();
+    }
+
+    /**
+     * Restores the REMOTE-topic MCQ banks refreshRemoteBanks() last persisted, so a restart
+     * doesn't lose them and force re-ingestion — the 4 vendored topics above always load fresh
+     * from classpath and are never overwritten by this cache.
+     */
+    private void loadRemoteBankCache() {
+        File file = new File(mcqBankCachePath);
+        if (!file.exists()) {
+            return; // first-ever boot, or nobody has ingested yet
+        }
+        try {
+            Map<Topic, List<StaticQuestionEntry>> cached = objectMapper.readValue(
+                    file, new TypeReference<Map<Topic, List<StaticQuestionEntry>>>() {});
+            Set<Topic> remoteTopics = remoteTopics();
+            cached.forEach((topic, entries) -> {
+                if (remoteTopics.contains(topic)) {
+                    bank.put(topic, entries);
+                }
+            });
+            log.info("Restored MCQ bank cache from {}", file.getAbsolutePath());
+        } catch (IOException e) {
+            log.warn("Could not load MCQ bank cache from {}: {}", file.getAbsolutePath(), e.getMessage());
+        }
+    }
+
+    private Set<Topic> remoteTopics() {
+        Set<Topic> topics = EnumSet.noneOf(Topic.class);
+        for (TopicCatalogEntry entry : topicCatalogService.all()) {
+            if (entry.sourceType() == TopicCatalogEntry.SourceType.REMOTE) {
+                topics.add(entry.topic());
+            }
+        }
+        return topics;
     }
 
     /**
@@ -85,6 +127,31 @@ public class StaticQuestionBankService {
             if (!merged.isEmpty()) {
                 bank.put(entry.topic(), merged);
             }
+        }
+        persistRemoteBankCache();
+    }
+
+    /** Persists only the REMOTE-topic entries of `bank` — the 4 classpath-vendored topics are
+     *  intentionally excluded so they always reload fresh from their bundled JSON at next boot. */
+    private void persistRemoteBankCache() {
+        Set<Topic> remoteTopics = remoteTopics();
+        Map<Topic, List<StaticQuestionEntry>> toPersist = new EnumMap<>(Topic.class);
+        bank.forEach((topic, entries) -> {
+            if (remoteTopics.contains(topic)) {
+                toPersist.put(topic, entries);
+            }
+        });
+
+        File file = new File(mcqBankCachePath);
+        File parent = file.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+        try {
+            objectMapper.writeValue(file, toPersist);
+            log.info("Persisted MCQ bank cache to {}", file.getAbsolutePath());
+        } catch (IOException e) {
+            log.warn("Could not persist MCQ bank cache to {}: {}", file.getAbsolutePath(), e.getMessage());
         }
     }
 

@@ -4,17 +4,20 @@ import com.mockinterview.backend.dto.IngestionSummary;
 import com.mockinterview.backend.dto.TopicCatalogEntry;
 import com.mockinterview.backend.entity.Difficulty;
 import com.mockinterview.backend.entity.Topic;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.jsoup.JsoupDocumentReader;
 import org.springframework.ai.reader.jsoup.config.JsoupDocumentReaderConfig;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.SimpleVectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,11 +44,32 @@ public class ContentIngestionService {
     private static final String GITHUB_RAW_BASE =
             "https://raw.githubusercontent.com/mnkkhan77/java-backend-interview-handbook/main/";
 
-    private final VectorStore vectorStore;
+    private final SimpleVectorStore vectorStore;
     private final TopicCatalogService topicCatalogService;
+
+    @Value("${app.vector-store-cache-path:./data/vector-store.json}")
+    private String vectorStoreCachePath;
 
     private static final Pattern QUESTION_TITLE_PATTERN = Pattern.compile("^Q\\d+\\.\\s*(.+?)\\s*ROI:", Pattern.DOTALL);
     private static final int TITLE_FALLBACK_LENGTH = 150;
+
+    /**
+     * Restores the in-memory vector store from disk at boot so a restart doesn't silently wipe
+     * everything an earlier /api/admin/ingest run populated — ingestion itself stays manual.
+     */
+    @PostConstruct
+    void loadCache() {
+        File file = new File(vectorStoreCachePath);
+        if (!file.exists()) {
+            return; // first-ever boot, or nobody has ingested yet
+        }
+        try {
+            vectorStore.load(file);
+            log.info("Restored vector store cache from {}", file.getAbsolutePath());
+        } catch (Exception e) {
+            log.warn("Could not load vector store cache from {}: {}", file.getAbsolutePath(), e.getMessage());
+        }
+    }
 
     public IngestionSummary ingestAll() {
         Map<Topic, Integer> chunksByTopic = new EnumMap<>(Topic.class);
@@ -65,7 +89,22 @@ public class ContentIngestionService {
             total += countForTopic;
         }
 
+        persistCache();
         return new IngestionSummary(total, chunksByTopic);
+    }
+
+    private void persistCache() {
+        File file = new File(vectorStoreCachePath);
+        File parent = file.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+        try {
+            vectorStore.save(file);
+            log.info("Persisted vector store cache to {}", file.getAbsolutePath());
+        } catch (Exception e) {
+            log.warn("Could not persist vector store cache to {}: {}", file.getAbsolutePath(), e.getMessage());
+        }
     }
 
     private List<Document> readAndTag(Topic topic, TopicCatalogEntry.SourceType sourceType, String sourcePath) {

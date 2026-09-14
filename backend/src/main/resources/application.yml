@@ -55,3 +55,9 @@ interview:
 # A local Judge0 container (judge0/docker-compose.yml) backs the Run Code feature.
 judge0:
   base-url: ${JUDGE0_BASE_URL:http://localhost:2358}
+
+app:
+  # Disk caches so a restart doesn't silently wipe what /api/admin/ingest last populated — see
+  # ContentIngestionService and StaticQuestionBankService. Ingestion itself stays manual/admin-run.
+  vector-store-cache-path: ${VECTOR_STORE_CACHE_PATH:./data/vector-store.json}
+  mcq-bank-cache-path: ${MCQ_BANK_CACHE_PATH:./data/mcq-bank-cache.json}
