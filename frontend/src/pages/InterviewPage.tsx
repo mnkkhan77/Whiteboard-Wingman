@@ -16,6 +16,7 @@ type Phase = "AWAITING_ANSWER" | "SUBMITTING" | "SHOWING_FEEDBACK" | "FINISHING"
 interface LocationState {
   firstQuestion: QuestionResponse;
   targetQuestionCount: number;
+  timedMode?: boolean;
 }
 
 const QUESTION_TYPE_LABEL: Record<QuestionType, string> = {
@@ -25,6 +26,27 @@ const QUESTION_TYPE_LABEL: Record<QuestionType, string> = {
 };
 
 const ROUND_ORDER: QuestionType[] = ["CONCEPTUAL", "MCQ", "CODING"];
+
+// Per-question-type countdown budgets for timed mode, in seconds. Named constants so the pacing
+// is easy to tweak without hunting through JSX.
+const CONCEPTUAL_TIME_BUDGET_SECONDS = 180;
+const MCQ_TIME_BUDGET_SECONDS = 45;
+const CODING_TIME_BUDGET_SECONDS = 900; // 15 minutes
+
+const QUESTION_TIME_BUDGET_SECONDS: Record<QuestionType, number> = {
+  CONCEPTUAL: CONCEPTUAL_TIME_BUDGET_SECONDS,
+  MCQ: MCQ_TIME_BUDGET_SECONDS,
+  CODING: CODING_TIME_BUDGET_SECONDS,
+};
+
+// Timer turns urgent once this fraction (or less) of the budget remains.
+const TIMER_URGENT_THRESHOLD = 0.2;
+
+function formatCountdown(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
 
 function scoreTier(score: number): "good" | "mid" | "poor" {
   if (score >= 80) return "good";
@@ -41,6 +63,9 @@ export default function InterviewPage() {
 
   const locationState = location.state as LocationState | null;
   const numericSessionId = sessionId ? Number(sessionId) : NaN;
+  // Defaults to false for both an older link (no timedMode in state) and a mid-interview refresh
+  // (React Router's in-memory location.state doesn't survive a reload).
+  const timedMode = locationState?.timedMode ?? false;
 
   const [question, setQuestion] = useState<QuestionResponse | null>(locationState?.firstQuestion ?? null);
   const [progress, setProgress] = useState<ProgressResponse>({
@@ -62,6 +87,7 @@ export default function InterviewPage() {
   const [sectionTransitionLoading, setSectionTransitionLoading] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   // Guards against a slow initial resume-fetch resolving after the user has already answered and
   // moved on (e.g. a fast reply on a slow connection) — it must not clobber newer client state.
@@ -117,6 +143,38 @@ export default function InterviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numericSessionId, token]);
 
+  // Resets (and starts) the per-question countdown whenever a new question is shown while awaiting
+  // an answer. No timer at all while timed mode is off or while reviewing feedback (there's nothing
+  // to race against then) — re-running this effect always clears the previous interval first, so
+  // nothing leaks across question changes.
+  useEffect(() => {
+    if (!timedMode || phase !== "AWAITING_ANSWER" || !question) {
+      setSecondsLeft(null);
+      return;
+    }
+    setSecondsLeft(QUESTION_TIME_BUDGET_SECONDS[question.questionType]);
+    const intervalId = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(intervalId);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [question, phase, timedMode]);
+
+  // When the countdown reaches zero: auto-submit only if the current answer is already
+  // submittable (mirrors clicking Submit); otherwise leave the form open and just show "Time's up".
+  useEffect(() => {
+    if (!timedMode || secondsLeft !== 0 || phase !== "AWAITING_ANSWER") return;
+    if (canSubmit) {
+      submitCurrentAnswer();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secondsLeft]);
+
   if (loadError) {
     return (
       <>
@@ -142,8 +200,7 @@ export default function InterviewPage() {
     );
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function submitCurrentAnswer() {
     if (!token || Number.isNaN(numericSessionId)) return;
     hasSubmittedRef.current = true;
     setError(null);
@@ -171,6 +228,11 @@ export default function InterviewPage() {
       setError(err instanceof ApiError ? err.message : "Could not submit your answer. Please try again.");
       setPhase("AWAITING_ANSWER");
     }
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    await submitCurrentAnswer();
   }
 
   async function handleNext() {
@@ -259,6 +321,19 @@ export default function InterviewPage() {
           <div className="question-card-header">
             <span className={`difficulty-badge difficulty-${question.difficulty.toLowerCase()}`}>{question.difficulty}</span>
             <span className={`type-badge type-${question.questionType.toLowerCase()}`}>{QUESTION_TYPE_LABEL[question.questionType]}</span>
+            {timedMode && secondsLeft !== null && (
+              <span
+                className={
+                  secondsLeft === 0
+                    ? "timer-badge timer-badge-urgent"
+                    : secondsLeft <= QUESTION_TIME_BUDGET_SECONDS[question.questionType] * TIMER_URGENT_THRESHOLD
+                      ? "timer-badge timer-badge-urgent"
+                      : "timer-badge"
+                }
+              >
+                {secondsLeft === 0 ? "⏰ Time's up" : formatCountdown(secondsLeft)}
+              </span>
+            )}
           </div>
           <p className="question-text">{question.promptText}</p>
 

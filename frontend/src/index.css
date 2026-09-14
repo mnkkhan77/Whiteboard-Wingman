@@ -373,6 +373,23 @@ hr {
   color: var(--easy);
 }
 
+.timer-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+  background: rgba(217, 119, 6, 0.14);
+  color: var(--medium);
+  margin-left: auto;
+}
+
+.timer-badge.timer-badge-urgent {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
 .keyless-warning {
   margin: 0;
   padding: 8px 14px;
@@ -1053,6 +1070,20 @@ button.secondary:hover,
 .difficulty-picker {
   display: flex;
   gap: 8px;
+}
+
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
 }
 
 .difficulty-option {

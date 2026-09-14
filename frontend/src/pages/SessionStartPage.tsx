@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useApiKey } from "../context/ApiKeyContext";
 import { Navbar } from "../components/Navbar";
@@ -41,17 +41,21 @@ const API_KEY_HELP: Record<"GROQ" | "OPENAI", { name: string; url: string }> = {
 };
 
 export default function SessionStartPage() {
-  const { token } = useAuth();
+  const { token, guest } = useAuth();
   const { apiKey, provider, model, setApiKey, setProvider, setModel } = useApiKey();
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefillTopic = (location.state as { prefillTopic?: Topic } | null)?.prefillTopic;
 
-  const { data: topicsByCategory } = useTopicCatalog(token);
+  const { data: topicsByCategory, byTopic } = useTopicCatalog(token);
   const [topicCategory, setTopicCategory] = useState<Category>("JAVA_BACKEND");
   const [topicFilter, setTopicFilter] = useState("");
-  const [selectedTopic, setSelectedTopic] = useState<Topic>("");
+  const [selectedTopic, setSelectedTopic] = useState<Topic>(prefillTopic ?? "");
   const [difficulty, setDifficulty] = useState<Difficulty>("EASY");
   const [questionCount, setQuestionCount] = useState(8);
+  const [timedMode, setTimedMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [guestLimitReached, setGuestLimitReached] = useState(false);
   const [loading, setLoading] = useState(false);
   const [useCustomModel, setUseCustomModel] = useState(
     () => model !== "" && !MODEL_PRESETS[provider].some((m) => m.value === model)
@@ -61,6 +65,13 @@ export default function SessionStartPage() {
   // set from an effect, so picking a topic and loading the catalog both just update state once.
   const defaultTopic = CATEGORIES.map((c) => topicsByCategory?.[c]?.[0]).find(Boolean)?.topic ?? "";
   const topic = selectedTopic || defaultTopic;
+
+  // If we arrived here via a "Practice this topic again" link, switch to the prefilled topic's
+  // own category once the (asynchronously loaded) catalog resolves it, so the right tab is active.
+  const prefillCategory = prefillTopic ? byTopic[prefillTopic]?.category : undefined;
+  useEffect(() => {
+    if (prefillCategory) setTopicCategory(prefillCategory);
+  }, [prefillCategory]);
 
   const topicsInCategory = topicsByCategory?.[topicCategory] ?? [];
   const filteredTopics = topicFilter.trim()
@@ -90,14 +101,20 @@ export default function SessionStartPage() {
     e.preventDefault();
     if (!token) return;
     setError(null);
+    setGuestLimitReached(false);
     setLoading(true);
     try {
       const res = await startSession({ token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined }, topic, difficulty, questionCount);
       navigate(`/interview/${res.sessionId}`, {
-        state: { firstQuestion: res.firstQuestion, targetQuestionCount: questionCount },
+        state: { firstQuestion: res.firstQuestion, targetQuestionCount: questionCount, timedMode },
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not start the interview. Please try again.");
+      if (err instanceof ApiError && err.code === "GUEST_LIMIT_REACHED") {
+        setGuestLimitReached(true);
+        setError(err.message);
+      } else {
+        setError(err instanceof ApiError ? err.message : "Could not start the interview. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -113,6 +130,13 @@ export default function SessionStartPage() {
           A verbal round comes first — a multiple-choice round, and a live-coding round for topics with
           coding content, follow automatically with a break in between.
         </p>
+
+        {guest && (
+          <p className="keyless-warning">
+            👋 You're trying this as a guest — this is your one free attempt. <Link to="/register">Sign up</Link> for
+            unlimited practice and saved reports.
+          </p>
+        )}
 
         <form className="session-start-form" onSubmit={handleSubmit}>
           <section className="card">
@@ -187,8 +211,16 @@ export default function SessionStartPage() {
                 min={1}
                 max={20}
                 value={questionCount}
-                onChange={(e) => setQuestionCount(Number(e.target.value))}
+                onChange={(e) => {
+                  const parsed = Number(e.target.value);
+                  setQuestionCount(Number.isNaN(parsed) ? 1 : Math.min(20, Math.max(1, parsed)));
+                }}
               />
+            </label>
+
+            <label className="checkbox-label">
+              <input type="checkbox" checked={timedMode} onChange={(e) => setTimedMode(e.target.checked)} />
+              ⏱ Timed mode <span className="hint">(add a per-question countdown for realistic interview pressure)</span>
             </label>
           </section>
 
@@ -251,9 +283,19 @@ export default function SessionStartPage() {
             </label>
           </section>
 
-          {error && <p className="error-text">{error}</p>}
+          {error && (
+            <p className="error-text">
+              {error}
+              {guestLimitReached && (
+                <>
+                  {" "}
+                  <Link to="/register">Sign up</Link>.
+                </>
+              )}
+            </p>
+          )}
 
-          <button type="submit" className="primary start-cta" disabled={loading || !topic}>
+          <button type="submit" className="primary start-cta" disabled={loading || !topic || guestLimitReached}>
             {loading ? "Starting..." : "Start Interview →"}
           </button>
         </form>
