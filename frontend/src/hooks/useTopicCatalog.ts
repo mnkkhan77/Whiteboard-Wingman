@@ -7,11 +7,13 @@ import type { Topic, TopicsByCategory, TopicSummary } from "../types/api";
 let cache: TopicsByCategory | null = null;
 let inflight: Promise<TopicsByCategory> | null = null;
 
-export function useTopicCatalog(token: string | null) {
+// The catalog endpoint (GET /api/topics) is public — token is only passed through when the
+// caller happens to have one (it's harmless either way), not required to fetch.
+export function useTopicCatalog(token?: string | null) {
   const [data, setData] = useState<TopicsByCategory | null>(cache);
 
   useEffect(() => {
-    if (!token || cache) return;
+    if (cache) return;
     if (!inflight) {
       inflight = listTopics(token).then((res) => {
         cache = res;

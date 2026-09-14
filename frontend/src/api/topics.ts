@@ -2,7 +2,7 @@ import { apiFetch } from "./client";
 import type { LlmCreds } from "./sessions";
 import type { TopicRecommendationResponse, TopicsByCategory } from "../types/api";
 
-export function listTopics(token: string) {
+export function listTopics(token?: string | null) {
   return apiFetch<TopicsByCategory>("/topics", { token });
 }
 
