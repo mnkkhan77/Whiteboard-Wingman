@@ -7,19 +7,36 @@ interface AuthState {
   email: string | null;
   displayName: string | null;
   role: string | null;
+  guest: boolean;
 }
 
 interface AuthContextValue extends AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
+  guestLogin: () => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const STORAGE_KEY = "mockinterview_auth";
-const EMPTY_STATE: AuthState = { token: null, email: null, displayName: null, role: null };
+const GUEST_ID_KEY = "mockinterview_guest_id";
+const EMPTY_STATE: AuthState = { token: null, email: null, displayName: null, role: null, guest: false };
+
+// Persisted separately from STORAGE_KEY (and never cleared on logout) so the same browser maps back
+// to the same guest account next time — that's what makes the backend's one-attempt cap stick.
+function getOrCreateGuestId(): string {
+  try {
+    const existing = localStorage.getItem(GUEST_ID_KEY);
+    if (existing) return existing;
+    const created = crypto.randomUUID();
+    localStorage.setItem(GUEST_ID_KEY, created);
+    return created;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
 
 function loadInitial(): AuthState {
   try {
@@ -36,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persist = (auth: AuthResponse | null) => {
     if (auth) {
-      const next: AuthState = { token: auth.token, email: auth.email, displayName: auth.displayName, role: auth.role };
+      const next: AuthState = { token: auth.token, email: auth.email, displayName: auth.displayName, role: auth.role, guest: auth.guest };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch {
@@ -63,10 +80,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist(res);
   }, []);
 
+  const guestLogin = useCallback(async () => {
+    const res = await authApi.guestLogin(getOrCreateGuestId());
+    persist(res);
+  }, []);
+
   const logout = useCallback(() => persist(null), []);
 
   return (
-    <AuthContext.Provider value={{ ...state, isAuthenticated: !!state.token, login, register, logout }}>
+    <AuthContext.Provider value={{ ...state, isAuthenticated: !!state.token, login, register, guestLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

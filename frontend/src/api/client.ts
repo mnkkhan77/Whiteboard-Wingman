@@ -11,9 +11,11 @@ export interface RequestOptions {
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code?: string;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -32,13 +34,15 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
 
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
+    let code: string | undefined;
     try {
       const data = await res.json();
       message = data.message || message;
+      code = data.code;
     } catch {
       // response wasn't JSON — keep the generic message
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, code);
   }
 
   if (res.status === 204) return undefined as T;

@@ -16,6 +16,7 @@ export interface AuthResponse {
   email: string;
   displayName: string;
   role: string;
+  guest: boolean;
 }
 
 export interface TestCase {

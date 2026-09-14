@@ -28,6 +28,18 @@ public class User {
     @Column(nullable = false)
     private Role role = Role.USER;
 
+    /** True for a no-signup trial account created via POST /api/auth/guest — everything else about
+     *  a guest is a normal authenticated User, so ownership checks and JWT auth don't need to
+     *  special-case it. Only InterviewSessionService.startSession treats it differently, to cap
+     *  guests at one attempt. */
+    @Column(nullable = false)
+    private boolean guest = false;
+
+    /** Client-generated id (browser localStorage) used to recognize the same guest across logins;
+     *  unique and null for regular accounts. */
+    @Column(unique = true)
+    private String guestId;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

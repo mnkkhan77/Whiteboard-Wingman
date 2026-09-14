@@ -1,6 +1,7 @@
 package com.mockinterview.backend.service;
 
 import com.mockinterview.backend.dto.AuthResponse;
+import com.mockinterview.backend.dto.GuestLoginRequest;
 import com.mockinterview.backend.dto.LoginRequest;
 import com.mockinterview.backend.dto.RegisterRequest;
 import com.mockinterview.backend.entity.Role;
@@ -53,6 +54,28 @@ public class AuthService {
         return issueToken(user);
     }
 
+    /** Logs a browser back in as its guest account (creating one on first call), identified by a
+     *  client-generated guestId (localStorage) rather than credentials. Reusing the same account on
+     *  repeat calls — instead of minting a new one each time — is what lets the one-attempt cap in
+     *  InterviewSessionService.startSession actually stick. */
+    public AuthResponse guestLogin(GuestLoginRequest request) {
+        User user = userRepository.findByGuestId(request.guestId()).orElseGet(() -> {
+            User guest = new User();
+            guest.setEmail("guest-" + request.guestId() + "@guest.local");
+            guest.setPasswordHash(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+            guest.setDisplayName("Guest");
+            guest.setRole(Role.USER);
+            guest.setGuest(true);
+            guest.setGuestId(request.guestId());
+            return guest;
+        });
+
+        user.setLastActiveAt(java.time.LocalDateTime.now());
+        userRepository.save(user);
+
+        return issueToken(user);
+    }
+
     private AuthResponse issueToken(User user) {
         String jwt = jwtUtil.generateToken(user);
 
@@ -61,6 +84,6 @@ public class AuthService {
         token.setUser(user);
         tokenRepository.save(token);
 
-        return new AuthResponse(jwt, user.getEmail(), user.getDisplayName(), user.getRole().name());
+        return new AuthResponse(jwt, user.getEmail(), user.getDisplayName(), user.getRole().name(), user.isGuest());
     }
 }

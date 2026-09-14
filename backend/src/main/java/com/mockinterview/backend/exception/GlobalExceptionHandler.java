@@ -39,6 +39,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
     }
 
+    // Distinct status + "code" (rather than folding into handleIllegalState) so the frontend can
+    // reliably show a "sign up to continue" CTA instead of matching on message text.
+    @ExceptionHandler(GuestAttemptLimitException.class)
+    public ResponseEntity<Map<String, String>> handleGuestAttemptLimit(GuestAttemptLimitException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "message", e.getMessage(),
+                "code", "GUEST_LIMIT_REACHED"
+        ));
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(NoSuchElementException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));

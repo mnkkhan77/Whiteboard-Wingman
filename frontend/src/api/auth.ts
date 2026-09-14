@@ -14,3 +14,10 @@ export function login(email: string, password: string) {
     body: { email, password },
   });
 }
+
+export function guestLogin(guestId: string) {
+  return apiFetch<AuthResponse>("/auth/guest", {
+    method: "POST",
+    body: { guestId },
+  });
+}

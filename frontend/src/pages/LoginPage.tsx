@@ -4,13 +4,14 @@ import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../api/client";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, guestLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -23,6 +24,19 @@ export default function LoginPage() {
       setError(err instanceof ApiError ? err.message : "Login failed. Please try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGuest() {
+    setError(null);
+    setGuestLoading(true);
+    try {
+      await guestLogin();
+      navigate("/sessions/new", { replace: true });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not start a guest session. Please try again.");
+    } finally {
+      setGuestLoading(false);
     }
   }
 
@@ -113,6 +127,13 @@ export default function LoginPage() {
             <p className="auth-switch">
               No account? <Link to="/register">Register</Link>
             </p>
+
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+            <button type="button" className="secondary auth-submit" onClick={handleGuest} disabled={guestLoading}>
+              {guestLoading ? "Starting..." : "Try it free — no signup (1 attempt)"}
+            </button>
           </form>
         </div>
       </div>

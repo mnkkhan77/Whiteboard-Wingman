@@ -209,6 +209,11 @@ h3 {
   flex-shrink: 0;
 }
 
+.navbar-guest-cta {
+  color: var(--primary);
+  white-space: nowrap;
+}
+
 .navbar-user {
   display: flex;
   align-items: center;
@@ -928,6 +933,23 @@ button.secondary:hover {
 .auth-submit {
   width: 100%;
   margin-top: 4px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
 }
 
 @media (max-width: 900px) {

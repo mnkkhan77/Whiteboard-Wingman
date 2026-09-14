@@ -2,6 +2,7 @@ package com.mockinterview.backend.service;
 
 import com.mockinterview.backend.dto.*;
 import com.mockinterview.backend.entity.*;
+import com.mockinterview.backend.exception.GuestAttemptLimitException;
 import com.mockinterview.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -52,6 +53,10 @@ public class InterviewSessionService {
     @Transactional
     public SessionStartResponse startSession(User user, StartSessionRequest request,
                                               String apiKey, PerRequestChatClientFactory.Provider provider, String model) {
+        if (user.isGuest() && sessionRepository.existsByUser(user)) {
+            throw new GuestAttemptLimitException();
+        }
+
         int questionCount = request.questionCount() != null ? request.questionCount() : 8;
         boolean llmAvailable = apiKey != null && !apiKey.isBlank();
 

@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Navbar() {
-  const { displayName, role, logout } = useAuth();
+  const { displayName, role, guest, logout } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => (path === "/" ? location.pathname === "/" : location.pathname.startsWith(path));
@@ -29,9 +29,14 @@ export function Navbar() {
 
         <div className="navbar-actions">
           <ThemeToggle />
+          {guest && (
+            <Link to="/register" className="navbar-link navbar-guest-cta">
+              Sign up to save progress
+            </Link>
+          )}
           <div className="navbar-user">
             <span className="navbar-avatar">{displayName?.charAt(0).toUpperCase() ?? "?"}</span>
-            <span className="navbar-name">{displayName}</span>
+            <span className="navbar-name">{guest ? "Guest" : displayName}</span>
           </div>
           <button type="button" className="secondary navbar-logout" onClick={logout}>
             Log out

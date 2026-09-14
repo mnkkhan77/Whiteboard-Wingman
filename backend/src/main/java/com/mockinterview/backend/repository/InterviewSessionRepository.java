@@ -10,4 +10,6 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
     List<InterviewSession> findByUserOrderByCreatedAtDesc(User user);
 
     List<InterviewSession> findByUserIn(List<User> users);
+
+    boolean existsByUser(User user);
 }
