@@ -23,6 +23,9 @@ export function Navbar() {
           <Link to="/progress" className={isActive("/progress") ? "navbar-link active" : "navbar-link"}>
             Progress
           </Link>
+          <Link to="/packs" className={isActive("/packs") ? "navbar-link active" : "navbar-link"}>
+            Study Packs
+          </Link>
           {role === "ADMIN" && (
             <Link to="/admin" className={isActive("/admin") ? "navbar-link active" : "navbar-link"}>
               Admin

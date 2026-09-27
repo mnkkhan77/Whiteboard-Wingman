@@ -245,6 +245,27 @@ h3 {
   .navbar-name {
     display: none;
   }
+
+  /* Links drop to their own full-width row on phones so a fourth link doesn't push the actions
+     off-screen; the row scrolls sideways if it still doesn't fit. */
+  .navbar-inner {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .navbar-links {
+    order: 3;
+    flex-basis: 100%;
+    overflow-x: auto;
+  }
+
+  .navbar-link {
+    white-space: nowrap;
+  }
+
+  .navbar-actions {
+    margin-left: auto;
+  }
 }
 
 .card {
@@ -401,7 +422,8 @@ hr {
   line-height: 1.5;
 }
 
-.tab-switch-warning {
+.tab-switch-warning,
+.pack-error {
   margin: 0;
   padding: 8px 14px;
   border-radius: var(--radius-sm);
@@ -1295,17 +1317,21 @@ button.secondary:hover,
   letter-spacing: 0.03em;
 }
 
-.status-in_progress {
+.status-in_progress,
+.pack-status-queued,
+.pack-status-embedding {
   background: var(--status-progress-bg);
   color: var(--status-progress-text);
 }
 
-.status-completed {
+.status-completed,
+.pack-status-ready {
   background: var(--status-completed-bg);
   color: var(--status-completed-text);
 }
 
-.status-abandoned {
+.status-abandoned,
+.tier-free {
   background: var(--border);
   color: var(--text-muted);
 }
@@ -2074,6 +2100,204 @@ h1 .report-hero-icon {
 @keyframes spinner-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* --- Study packs --- */
+
+button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+button.danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* Tier badges reuse .status-badge; FREE shares .status-abandoned's neutral colours. */
+.tier-pro {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.tier-max {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+}
+
+.pack-card h2 {
+  margin: 0;
+}
+
+.pack-card-header,
+.pack-button-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pack-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.pack-tier-grid .stat-value {
+  font-size: 1.3rem;
+  white-space: nowrap;
+}
+
+.pack-tier-grid .stat-label {
+  text-align: center;
+}
+
+.pack-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-accent);
+  text-align: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.pack-dropzone-active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.pack-dropzone-disabled {
+  opacity: 0.6;
+}
+
+.pack-dropzone-icon {
+  font-size: 2rem;
+}
+
+.pack-dropzone .pack-button-row {
+  justify-content: center;
+}
+
+.pack-dropzone-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Long file names / titles break instead of pushing the layout wider than a phone screen. */
+.pack-wrap {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pack-upload-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pack-row {
+  gap: 10px;
+}
+
+.pack-row-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pack-row-top .session-row-info {
+  flex: 1 1 260px;
+}
+
+.pack-meta {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+/* Status colours come from the grouped .status-* rules; in-flight badges also hold a spinner. */
+.pack-status-queued,
+.pack-status-embedding {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pack-status-failed {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.spinner.spinner-inline {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+  border-color: currentColor;
+  border-top-color: transparent;
+}
+
+.pack-small-button {
+  padding: 7px 14px;
+  font-size: 0.85rem;
+}
+
+.pack-coming-soon {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+/* Layout/hover come from .session-row; this only turns the card into a plain link. */
+.dashboard-packs-card {
+  padding: 16px 20px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.dashboard-packs-card .session-row-info {
+  flex: 1;
+  gap: 2px;
+}
+
+.dashboard-packs-card .hint {
+  font-size: 0.85rem;
+}
+
+.admin-tier-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-tier-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+.admin-tier-label select {
+  padding: 6px 10px;
+}
+
+@media (max-width: 620px) {
+  .pack-tier-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-overview {
+    flex-wrap: wrap;
   }
 }
 

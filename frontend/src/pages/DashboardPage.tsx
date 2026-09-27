@@ -58,6 +58,17 @@ export default function DashboardPage() {
           </div>
         )}
 
+        <Link to="/packs" className="card session-row dashboard-packs-card">
+          <span className="topic-icon topic-icon-default" aria-hidden>
+            📚
+          </span>
+          <div className="session-row-info">
+            <strong>Study Packs</strong>
+            <span className="hint">Upload your notes or slides and turn them into study material.</span>
+          </div>
+          <span className="session-row-link">Open →</span>
+        </Link>
+
         <h2>Past sessions</h2>
         {error && <p className="error-text">{error}</p>}
         {sessions === null && !error && (

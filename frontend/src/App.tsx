@@ -13,6 +13,7 @@ import SessionStartPage from "./pages/SessionStartPage";
 import InterviewPage from "./pages/InterviewPage";
 import ReportPage from "./pages/ReportPage";
 import PublicReportPage from "./pages/PublicReportPage";
+import PacksPage from "./pages/PacksPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminUserDetailPage from "./pages/AdminUserDetailPage";
 
@@ -50,6 +51,7 @@ export default function App() {
                 <Route path="/sessions/new" element={<SessionStartPage />} />
                 <Route path="/interview/:sessionId" element={<InterviewPage />} />
                 <Route path="/sessions/:sessionId/report" element={<ReportPage />} />
+                <Route path="/packs" element={<PacksPage />} />
 
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminDashboardPage />} />

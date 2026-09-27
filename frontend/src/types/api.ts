@@ -10,6 +10,7 @@ export type Correctness = "CORRECT" | "PARTIALLY_CORRECT" | "INCORRECT";
 export type DifficultyDelta = "EASIER" | "SAME" | "HARDER";
 export type SessionStatus = "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
 export type LlmProvider = "GROQ" | "OPENAI";
+export type Tier = "FREE" | "PRO" | "MAX";
 
 export interface AuthResponse {
   token: string;
@@ -145,6 +146,7 @@ export interface AdminUserSummary {
   sessionCount: number;
   averageScore: number | null;
   mostPracticedTopic: Topic | null;
+  tier: Tier;
 }
 
 export interface Page<T> {
@@ -175,6 +177,7 @@ export interface AdminUserDetail {
   role: string;
   createdAt: string;
   lastActiveAt: string | null;
+  tier: Tier;
   sessions: AdminSessionSummary[];
 }
 
@@ -219,4 +222,48 @@ export interface PersonalProgressResponse {
   totalSessions: number;
   completedSessions: number;
   overallAverageScore: number | null;
+}
+
+// --- Study packs (docs/study-packs-contract.md) ---
+
+export type PackStatus = "QUEUED" | "EMBEDDING" | "READY" | "FAILED";
+
+/** Set on a FAILED pack — doc-processor codes plus CHUNK_LIMIT_EXCEEDED / EMBEDDING_FAILED (backend). */
+export type PackErrorCode =
+  | "UNSUPPORTED_FORMAT"
+  | "PAGE_LIMIT_EXCEEDED"
+  | "OCR_REQUIRED"
+  | "FILE_NOT_FOUND"
+  | "EMPTY_DOCUMENT"
+  | "PARSE_ERROR"
+  | "CHUNK_LIMIT_EXCEEDED"
+  | "EMBEDDING_FAILED";
+
+export interface PackDto {
+  id: number;
+  title: string;
+  fileName: string;
+  status: PackStatus;
+  sizeBytes: number;
+  pageCount: number | null;
+  chunkCount: number | null;
+  parser: "docling" | "unstructured" | null;
+  ocrUsed: boolean | null;
+  errorCode: PackErrorCode | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PackLimitsDto {
+  tier: Tier;
+  maxFileBytes: number;
+  maxPages: number;
+  /** -1 = unlimited */
+  maxPacks: number;
+  maxChunksPerPack: number;
+  ocrEnabled: boolean;
+  /** Lower-case, no leading dot, e.g. ["pdf", "docx"] */
+  allowedExtensions: string[];
+  packsUsed: number;
 }

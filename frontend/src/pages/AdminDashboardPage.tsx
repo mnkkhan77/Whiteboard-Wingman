@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
+import { TierBadge } from "../components/TierBadge";
 import { getStats, listUsers } from "../api/admin";
 import { ApiError } from "../api/client";
 import { useTopicCatalog } from "../hooks/useTopicCatalog";
@@ -68,6 +69,7 @@ export default function AdminDashboardPage() {
                   <tr>
                     <th>Email</th>
                     <th>Name</th>
+                    <th>Tier</th>
                     <th>Signed up</th>
                     <th>Last active</th>
                     <th>Sessions</th>
@@ -82,6 +84,9 @@ export default function AdminDashboardPage() {
                         <Link to={`/admin/users/${u.id}`}>{u.email}</Link>
                       </td>
                       <td>{u.displayName}</td>
+                      <td>
+                        <TierBadge tier={u.tier} />
+                      </td>
                       <td>{new Date(u.createdAt).toLocaleDateString()}</td>
                       <td>{u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleDateString() : "—"}</td>
                       <td>{u.sessionCount}</td>
