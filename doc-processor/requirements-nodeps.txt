@@ -1,0 +1,3 @@
+# Installed with `pip install --no-deps`: its pinned deps live in requirements.txt with
+# opencv-python swapped for opencv-python-headless (no libGL/X11 in a slim image).
+unstructured-inference==1.6.13

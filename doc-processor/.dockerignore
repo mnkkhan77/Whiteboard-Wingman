@@ -1,0 +1,21 @@
+# Keep the build context small; the Dockerfile only COPYs app/, scripts/, tests/, pytest.ini
+# and requirements*.txt.
+.git
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+.env
+*.log
+data/
+uploads/
+README.md
+Dockerfile
+.dockerignore

@@ -1,0 +1,38 @@
+# Full runtime (Docker image). torch/torchvision must come from the CPU wheel index first,
+# otherwise pip pulls the multi-GB CUDA build; the Dockerfile reads the two pins below for that.
+-r requirements-core.txt
+
+# --- PyTorch (CPU; single source of truth for the Dockerfile's CPU-index install) --------
+torch==2.14.0
+torchvision==0.29.0
+
+# --- Docling (PDF). docling-slim lets us pick extras instead of docling's "standard" set
+# (which adds RapidOCR, EasyOCR-era deps, email/HTML/LaTeX backends we never use).
+docling-slim[format-pdf,models-local,feat-chunking,convert-core]==2.130.0
+docling-core==2.99.0
+docling-ibm-models==4.0.3
+docling-parse==7.22.0
+transformers==5.17.0
+pypdfium2==5.13.0
+
+# --- Unstructured (DOCX / PPTX / image OCR / PDF fallback). Only the docx+pptx extras; the
+# image/pdf extras would add google-cloud-vision, effdet and the full opencv GUI build.
+unstructured[docx,pptx]==0.27.9
+python-docx==1.2.0
+python-pptx==1.0.2
+unstructured.pytesseract==0.3.15
+pdfminer.six==20260107
+pikepdf==10.14.0
+pypdf==6.19.0
+pi-heif==1.4.0
+pdf2image==1.17.0  # imported at module load by unstructured's pdf/image partitioners
+# Import-time deps of unstructured-inference (itself installed --no-deps from
+# requirements-nodeps.txt so it cannot drag in opencv-python, which needs libGL). Its declared
+# `timm` dependency is deliberately left out: nothing on our code paths imports it.
+onnx==1.23.0
+onnxruntime==1.30.0
+opencv-python-headless==5.0.0.93
+matplotlib==3.11.2
+# spaCy model Unstructured uses for text classification. Unstructured would otherwise
+# download and pip-install it into site-packages at runtime (fails offline / as non-root).
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
