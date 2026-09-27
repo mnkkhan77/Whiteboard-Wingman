@@ -58,8 +58,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isRevoked(String token) {
-        return tokenRepository.findByTokenValue(token)
-                .map(com.mockinterview.backend.entity.Token::isRevoked)
-                .orElse(false);
+        return tokenRepository.existsByTokenValueAndRevokedTrue(token);
     }
 }

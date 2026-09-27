@@ -130,7 +130,6 @@ class AdminAnalyticsServiceTest {
         InterviewSession dsaSession = session(1L, alice, Topic.DSA);
         InterviewSession springSession = session(2L, bob, Topic.SPRING);
 
-        when(userRepository.count()).thenReturn(2L);
         when(userRepository.findAll()).thenReturn(List.of(alice, bob));
         when(sessionRepository.findAll()).thenReturn(List.of(dsaSession, springSession));
         when(reportRepository.findAll()).thenReturn(List.of(report(dsaSession, 60), report(springSession, 100)));
@@ -151,7 +150,7 @@ class AdminAnalyticsServiceTest {
         hardEval.setAnswer(hardAnswer);
         hardEval.setScore(50);
 
-        when(evaluationRepository.findAll()).thenReturn(List.of(easyEval, hardEval));
+        when(evaluationRepository.findAllWithQuestion()).thenReturn(List.of(easyEval, hardEval));
 
         AdminStats stats = service.getStats();
 

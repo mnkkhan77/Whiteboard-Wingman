@@ -31,9 +31,9 @@ import java.util.stream.Collectors;
 /**
  * Aggregate queries backing the admin dashboard (PLAN.md §5, Phase 5). Deliberately loads the
  * (small, portfolio-scale) rows it needs into memory and aggregates with streams rather than
- * hand-writing a group-by JPQL query per metric — same pragmatic scale trade-off already made for
- * SimpleVectorStore (PLAN.md §4). No query here is per-row of a page/table: listUsers batches its
- * two lookups across the whole page, not once per user.
+ * hand-writing a group-by JPQL query per metric — a pragmatic trade-off at this scale. No query
+ * here is per-row of a page/table: listUsers batches its two lookups across the whole page, not
+ * once per user, and getStats fetch-joins each evaluation's question instead of lazy-loading it.
  */
 @Service
 @RequiredArgsConstructor
@@ -94,10 +94,10 @@ public class AdminAnalyticsService {
     }
 
     public AdminStats getStats() {
-        long totalUsers = userRepository.count();
+        List<User> allUsers = userRepository.findAll();
         List<InterviewSession> allSessions = sessionRepository.findAll();
         List<Report> allReports = reportRepository.findAll();
-        List<Evaluation> allEvaluations = evaluationRepository.findAll();
+        List<Evaluation> allEvaluations = evaluationRepository.findAllWithQuestion();
 
         Map<Topic, Long> sessionsByTopic = allSessions.stream()
                 .collect(Collectors.groupingBy(InterviewSession::getTopic, Collectors.counting()));
@@ -112,7 +112,7 @@ public class AdminAnalyticsService {
                         e -> e.getAnswer().getQuestion().getDifficulty(),
                         Collectors.averagingInt(Evaluation::getScore)));
 
-        List<WeeklySignupCount> signupsOverTime = userRepository.findAll().stream()
+        List<WeeklySignupCount> signupsOverTime = allUsers.stream()
                 .collect(Collectors.groupingBy(
                         u -> u.getCreatedAt().toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)),
                         Collectors.counting()))
@@ -121,7 +121,7 @@ public class AdminAnalyticsService {
                 .sorted(Comparator.comparing(WeeklySignupCount::weekStart))
                 .toList();
 
-        return new AdminStats(totalUsers, allSessions.size(), sessionsByTopic, averageScoreByTopic,
+        return new AdminStats(allUsers.size(), allSessions.size(), sessionsByTopic, averageScoreByTopic,
                 averageScoreByDifficulty, signupsOverTime);
     }
 
