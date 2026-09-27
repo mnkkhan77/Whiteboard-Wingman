@@ -1,6 +1,8 @@
 # Backend (Maven / Java)
 backend/target/
 backend/data/
+# app.storage.root (./data/uploads) is relative to the working dir — catches a backend run from the repo root.
+/data/
 *.class
 *.log
 
@@ -8,6 +10,15 @@ backend/data/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+
+# Python (doc-processor has its own .gitignore too; these catch stray runs from the repo root)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Claude Code local state (agent worktrees, personal settings)
+.claude/worktrees/
+.claude/settings.local.json
 
 # IDE
 .idea/
