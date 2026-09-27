@@ -4,20 +4,19 @@ import com.mockinterview.backend.dto.IngestionSummary;
 import com.mockinterview.backend.dto.TopicCatalogEntry;
 import com.mockinterview.backend.entity.Difficulty;
 import com.mockinterview.backend.entity.Topic;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.jsoup.JsoupDocumentReader;
 import org.springframework.ai.reader.jsoup.config.JsoupDocumentReaderConfig;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,6 +34,10 @@ import java.util.regex.Pattern;
  * CLASSPATH entries are the original vendored chapters, REMOTE entries are fetched live from the
  * handbook's GitHub repo on every ingestion run, so edits to that repo show up here without a
  * redeploy.
+ *
+ * Chunks land in PostgreSQL via pgvector (Flyway V14's vector_store table), so they survive a
+ * restart with no separate disk cache. Re-running ingestion is idempotent — see {@link #chunkId}
+ * and the per-source delete in {@link #ingestAll}.
  */
 @Slf4j
 @Service
@@ -44,32 +47,12 @@ public class ContentIngestionService {
     private static final String GITHUB_RAW_BASE =
             "https://raw.githubusercontent.com/mnkkhan77/java-backend-interview-handbook/main/";
 
-    private final SimpleVectorStore vectorStore;
+    private final VectorStore vectorStore;
     private final TopicCatalogService topicCatalogService;
-
-    @Value("${app.vector-store-cache-path:./data/vector-store.json}")
-    private String vectorStoreCachePath;
 
     private static final Pattern QUESTION_TITLE_PATTERN = Pattern.compile("^Q\\d+\\.\\s*(.+?)\\s*ROI:", Pattern.DOTALL);
     private static final int TITLE_FALLBACK_LENGTH = 150;
-
-    /**
-     * Restores the in-memory vector store from disk at boot so a restart doesn't silently wipe
-     * everything an earlier /api/admin/ingest run populated — ingestion itself stays manual.
-     */
-    @PostConstruct
-    void loadCache() {
-        File file = new File(vectorStoreCachePath);
-        if (!file.exists()) {
-            return; // first-ever boot, or nobody has ingested yet
-        }
-        try {
-            vectorStore.load(file);
-            log.info("Restored vector store cache from {}", file.getAbsolutePath());
-        } catch (Exception e) {
-            log.warn("Could not load vector store cache from {}: {}", file.getAbsolutePath(), e.getMessage());
-        }
-    }
+    private static final FilterExpressionBuilder FILTER = new FilterExpressionBuilder();
 
     public IngestionSummary ingestAll() {
         Map<Topic, Integer> chunksByTopic = new EnumMap<>(Topic.class);
@@ -80,6 +63,13 @@ public class ContentIngestionService {
             for (String sourcePath : entry.sourcePaths()) {
                 List<Document> documents = readAndTag(entry.topic(), entry.sourceType(), sourcePath);
                 if (!documents.isEmpty()) {
+                    // Deterministic ids already make unchanged chunks upsert in place; clearing the
+                    // source first also drops the tail when a file now has fewer sections than on
+                    // the last run. Only done once the new read succeeded, so an unreachable REMOTE
+                    // file keeps its previously ingested chunks instead of losing them.
+                    vectorStore.delete(FILTER.and(
+                            FILTER.eq("topic", entry.topic().name()),
+                            FILTER.eq("sourceFile", sourcePath)).build());
                     vectorStore.add(documents);
                 }
                 countForTopic += documents.size();
@@ -89,22 +79,7 @@ public class ContentIngestionService {
             total += countForTopic;
         }
 
-        persistCache();
         return new IngestionSummary(total, chunksByTopic);
-    }
-
-    private void persistCache() {
-        File file = new File(vectorStoreCachePath);
-        File parent = file.getParentFile();
-        if (parent != null) {
-            parent.mkdirs();
-        }
-        try {
-            vectorStore.save(file);
-            log.info("Persisted vector store cache to {}", file.getAbsolutePath());
-        } catch (Exception e) {
-            log.warn("Could not persist vector store cache to {}: {}", file.getAbsolutePath(), e.getMessage());
-        }
     }
 
     private List<Document> readAndTag(Topic topic, TopicCatalogEntry.SourceType sourceType, String sourcePath) {
@@ -140,14 +115,31 @@ public class ContentIngestionService {
             metadata.put("difficulty", bucketDifficulty(i, total).name());
             metadata.put("sourceFile", sourcePath);
             metadata.put("questionTitle", extractQuestionTitle(text));
+            metadata.put("chunkKey", chunkKey(topic, sourcePath, i));
 
             tagged.add(Document.builder()
-                    .id(topic.name() + ":" + sourcePath + ":" + i)
+                    .id(chunkId(topic, sourcePath, i))
                     .text(text)
                     .metadata(metadata)
                     .build());
         }
         return tagged;
+    }
+
+    /** Human-readable identity of a chunk (what its id used to be) — kept in metadata for debugging. */
+    private static String chunkKey(Topic topic, String sourcePath, int index) {
+        return topic.name() + ":" + sourcePath + ":" + index;
+    }
+
+    /**
+     * PgVectorStore's id column is a UUID (its default PgIdType, which study-pack chunks sharing
+     * the same table also use), and its add() is an upsert on id — so a name-based (v3) UUID of the
+     * chunk key makes re-ingesting the same section overwrite its row instead of duplicating it,
+     * without switching the whole table to TEXT ids. It also keeps Question.sourceChunkId stable
+     * across re-ingestion, so an in-progress session's already-used chunks stay recognisable.
+     */
+    static String chunkId(Topic topic, String sourcePath, int index) {
+        return UUID.nameUUIDFromBytes(chunkKey(topic, sourcePath, index).getBytes(StandardCharsets.UTF_8)).toString();
     }
 
     private Difficulty bucketDifficulty(int index, int total) {

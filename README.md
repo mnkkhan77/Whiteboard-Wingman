@@ -23,11 +23,12 @@ plan live in [`PLAN.md`](PLAN.md). This README is the practical "how do I run th
 ## Architecture
 
 ```
-React + TypeScript (Vite)  --->  Spring Boot API  --->  MySQL (prod) / H2 (dev, file-based)
+React + TypeScript (Vite)  --->  Spring Boot API  --->  PostgreSQL 16 + pgvector (Docker)
    JWT in localStorage            Flyway migrations       schema is validate-only; Flyway owns it
    LLM key in sessionStorage      Spring Security (JWT)
-                                  Spring AI --------->  In-memory vector store (RAG over
-                                                          ingested interview-handbook content)
+                                  Spring AI --------->  pgvector vector_store table (RAG over
+                                                          ingested interview-handbook content,
+                                                          local all-MiniLM-L6-v2 embeddings)
                                             --------->  Groq / OpenAI (the caller's own API key,
                                                           never stored server-side)
 ```
@@ -39,8 +40,10 @@ column or log line. See `PLAN.md` §8 for the full design and the regression tes
 ## Tech stack
 
 - **Backend**: Java 17, Spring Boot 3.5.9, Spring Security (JWT), Spring Data JPA, Spring AI 1.0.1
-  (OpenAI-compatible client for Groq/OpenAI, local embedding model, in-memory vector store),
-  Flyway, MySQL (prod) / H2 (dev & test), Maven.
+  (OpenAI-compatible client for Groq/OpenAI, local embedding model, pgvector vector store),
+  Flyway, PostgreSQL 16 + pgvector (dev, test and prod alike), Testcontainers, Maven.
+- **Infrastructure** (repo-root `docker-compose.yml`): PostgreSQL + pgvector, Kafka (KRaft) with
+  kafka-ui, and — behind a compose profile — the Python `doc-processor`.
 - **Frontend**: React 19, TypeScript, Vite, react-router-dom, Monaco Editor (the code editor
   behind VS Code) for coding-question answers.
 
@@ -57,12 +60,32 @@ PLAN.md     Full design doc: architecture decisions, phased build log, what chan
 - Java 17+
 - Node 18+
 - Maven (or use the bundled `./mvnw` if present)
-- A MySQL server, **only** if running the default/prod profile — local dev uses a file-based H2
-  database instead, no install required (see below).
+- **Docker** (Docker Desktop on Windows/macOS) — required: the database runs in a container
+  (`docker compose up -d`), and `mvn test` starts its own throwaway Postgres via Testcontainers.
 - A Groq or OpenAI API key to actually run an interview (get one free at
   [console.groq.com](https://console.groq.com)) — the app itself needs no API key to start up.
 
 ## Running locally
+
+### Infrastructure (Docker)
+
+From the repo root:
+
+```bash
+docker compose up -d        # postgres (+pgvector), kafka, kafka-init (creates topics), kafka-ui
+docker compose ps           # postgres/kafka should be "healthy"; kafka-init exits 0 once done
+```
+
+| Service | Host address | Notes |
+|---|---|---|
+| `postgres` (`pgvector/pgvector:pg16`) | `localhost:5433` | db/user/password `wingman`; data in the `postgres-data` volume |
+| `kafka` (single-node KRaft) | `localhost:9092` | containers use `kafka:29092` |
+| `kafka-ui` | `http://localhost:8085` | browse topics/messages |
+
+Postgres is published on **5433**, not 5432, so it can't collide with a natively installed
+PostgreSQL (set `POSTGRES_PORT` to change it, and `DB_PORT` in `backend/.env` to match). The
+Python document processor is opt-in: `docker compose --profile processor up -d --build`.
+`docker compose down` stops everything but keeps the database volume; add `-v` to wipe it.
 
 ### Backend
 
@@ -73,14 +96,18 @@ mvn spring-boot:run
 ```
 
 `dev` is the default profile (`spring.profiles.default` in `application.yml`), so **no `-D` flag
-is needed** — it activates automatically whenever nothing else says otherwise. It uses a
-file-based H2 database (`backend/data/`, gitignored), so you don't need a MySQL install for local
-development. `.env` is loaded automatically (via `springboot3-dotenv`) for everything *except*
-which profile is active — see `.env.example`. Flyway creates the schema on first boot.
+is needed** — it activates automatically whenever nothing else says otherwise. Every profile uses
+the same PostgreSQL (defaults: `localhost:5433`, db/user/password `wingman`, overridable via
+`DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USERNAME`/`DB_PASSWORD`); `dev` only adds the admin seeder below.
+`.env` is loaded automatically (via `springboot3-dotenv`) for everything *except* which profile is
+active — see `.env.example`. Flyway creates the schema (V1–V14, including the pgvector
+`vector_store` table) on first boot. **Upgrading an older checkout?** An existing `backend/.env`
+from the MySQL/H2 days still says `DB_USERNAME=root` — change it (and `DB_PASSWORD`) to `wingman`
+or delete those lines.
 
-To run against the default/prod profile instead (e.g. to test against a real local MySQL),
-override it explicitly: `mvn spring-boot:run "-Dspring-boot.run.profiles=default"` (quote it in
-PowerShell so a stray space from copy-paste can't split the argument in two).
+To run as the default/prod profile instead, override it explicitly:
+`mvn spring-boot:run "-Dspring-boot.run.profiles=default"` (quote it in PowerShell so a stray
+space from copy-paste can't split the argument in two).
 
 To promote a registered user to ADMIN locally, set `APP_SEED_ADMIN_EMAIL` in `.env` to their email
 and restart — a dev-only seeder promotes them on startup.
@@ -111,8 +138,12 @@ Runs on `http://localhost:5173`.
 
 ```bash
 cd backend
-mvn test        # 62 tests: unit + full-stack (real JWT auth, real H2 DB, mocked LLM calls)
+mvn test        # 106 tests: unit + full-stack (real JWT auth, real Postgres+pgvector, mocked LLM calls)
 ```
+
+Docker must be running: the full-stack tests start a throwaway `pgvector/pgvector:pg16`
+container through Testcontainers (`jdbc:tc:` URL in `application-test.yml`), independent of the
+compose stack, and apply the same Flyway migrations as dev/prod.
 
 ```bash
 cd frontend
@@ -126,8 +157,11 @@ and needs no API key.
 ## Content ingestion (RAG)
 
 Real interview-handbook content is bundled under
-`backend/src/main/resources/interview-content/` and gets chunked + embedded into the in-memory
-vector store. Trigger ingestion (as an ADMIN) with:
+`backend/src/main/resources/interview-content/` (plus ~160 more chapters fetched from the
+handbook's GitHub repo) and gets chunked, embedded locally, and stored in Postgres (pgvector
+`vector_store` table), so it survives restarts. Re-running it is idempotent — chunks get
+deterministic ids and upsert in place. A full run takes several minutes. Trigger ingestion (as an
+ADMIN) with:
 
 ```bash
 curl -X POST http://localhost:8080/api/admin/ingest -H "Authorization: Bearer <admin JWT>"
@@ -155,11 +189,8 @@ The LLM key headers are `X-LLM-Api-Key` (required), `X-LLM-Provider` (`GROQ`\|`O
 
 - No live end-to-end verification against a real LLM provider beyond manual spot checks (all
   automated tests mock the LLM call).
-- MySQL/prod Flyway migrations are verified against the H2 dialect only — no MySQL server was
-  available in development. See `PLAN.md` §13 for the exact divergence (one `${clob_type}`
-  placeholder).
-- Pinecone was the originally planned vector store; an in-memory `SimpleVectorStore` is used
-  instead (no Pinecone account provisioned) — swapping it in later is a one-bean change.
+- Pinecone was the originally planned vector store; pgvector in the same PostgreSQL is used
+  instead (no extra service or account to provision).
 - SSE streaming feedback and a dedicated visual styling pass were deliberately deferred as
   low-value nice-to-haves.
 

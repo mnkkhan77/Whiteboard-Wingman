@@ -11,11 +11,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,7 +33,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ContentIngestionServiceTest {
 
-    @Mock private SimpleVectorStore vectorStore;
+    @Mock private VectorStore vectorStore;
     @Mock private TopicCatalogService topicCatalogService;
 
     private static final List<TopicCatalogEntry> CLASSPATH_CATALOG = List.of(
@@ -89,5 +92,27 @@ class ContentIngestionServiceTest {
         String title = (String) someDoc.getMetadata().get("questionTitle");
         assertThat(title).doesNotContain("ROI:");
         assertThat(title).doesNotMatch("^Q\\d+\\..*");
+    }
+
+    @Test
+    void reIngestionReusesTheSameUuidIdsAndClearsEachSourceBeforeAddingIt() {
+        ContentIngestionService service = service();
+        ArgumentCaptor<List<Document>> captor = ArgumentCaptor.forClass(List.class);
+
+        service.ingestAll();
+        service.ingestAll();
+
+        verify(vectorStore, times(10)).add(captor.capture());
+        // One delete-by-(topic, sourceFile) filter per source file, per run.
+        verify(vectorStore, times(10)).delete(any(Filter.Expression.class));
+
+        List<List<Document>> batches = captor.getAllValues();
+        List<String> firstRunIds = batches.subList(0, 5).stream().flatMap(List::stream).map(Document::getId).toList();
+        List<String> secondRunIds = batches.subList(5, 10).stream().flatMap(List::stream).map(Document::getId).toList();
+        // Same ids both runs -> PgVectorStore upserts rather than duplicating rows; and they must be
+        // UUIDs, since that's the vector_store.id column type (Flyway V14).
+        assertThat(secondRunIds).isEqualTo(firstRunIds);
+        assertThat(firstRunIds).doesNotHaveDuplicates();
+        assertThat(firstRunIds).allSatisfy(id -> UUID.fromString(id));
     }
 }

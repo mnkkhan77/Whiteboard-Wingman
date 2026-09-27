@@ -7,9 +7,12 @@ import com.mockinterview.backend.entity.Topic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,9 +28,14 @@ class StaticQuestionBankServiceTest {
 
     private StaticQuestionBankService bank;
 
+    @TempDir Path tempDir;
+
     @BeforeEach
     void setUp() {
         bank = new StaticQuestionBankService(topicCatalogService);
+        // @Value isn't processed outside a Spring context, so the cache path would be null (NPE in
+        // loadBank) — point it at an empty temp dir: no cache file, and nothing leaks between runs.
+        ReflectionTestUtils.setField(bank, "mcqBankCachePath", tempDir.resolve("mcq-bank-cache.json").toString());
         bank.loadBank(); // normally triggered by @PostConstruct; called directly here (same package)
     }
 

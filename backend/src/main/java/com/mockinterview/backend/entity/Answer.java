@@ -18,11 +18,13 @@ public class Answer {
     @JoinColumn(name = "question_id", nullable = false, unique = true)
     private Question question;
 
-    @Lob
-    @Column(nullable = false)
+    // Plain TEXT, deliberately not @Lob: on PostgreSQL, Hibernate maps an @Lob String to an oid
+    // large object (a separate pg_largeobject row read via the LOB API), not the TEXT column Flyway
+    // creates, so ddl-auto=validate rejects it. Same for every long-text field in the entities.
+    @Column(nullable = false, columnDefinition = "text")
     private String answerText;
 
-    @Lob
+    @Column(columnDefinition = "text")
     private String codeSubmission;
 
     @Column(nullable = false, updatable = false)

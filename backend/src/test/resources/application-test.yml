@@ -1,16 +1,15 @@
-# Used by @ActiveProfiles("test") in controller/integration tests — in-memory H2, isolated per run.
-# Schema comes entirely from the Flyway migrations (db/migration), same as dev/prod — ddl-auto is
-# validate-only so a test run also catches an entity/migration drift, not just app code bugs.
+# Used by @ActiveProfiles("test") in controller/integration tests. The jdbc:tc: URL makes
+# Testcontainers start a throwaway pgvector/pgvector:pg16 container (Docker required) the first
+# time a context opens a connection; TC_DAEMON keeps that one container alive for the whole JVM,
+# so every cached test context shares it, and Testcontainers removes it when the run ends. Tests
+# therefore hit the exact same PostgreSQL dialect, pgvector extension and Flyway migrations as
+# dev/prod. ddl-auto stays validate-only so a test run also catches entity/migration drift, not
+# just app code bugs.
 spring:
   datasource:
-    url: jdbc:h2:mem:mockinterview-test;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    # No username/password: Testcontainers' JDBC driver connects with the container's own
+    # generated credentials.
+    url: jdbc:tc:pgvector:pg16:///wingman?TC_DAEMON=true
   jpa:
     hibernate:
       ddl-auto: validate
-    database-platform: org.hibernate.dialect.H2Dialect
-  flyway:
-    placeholders:
-      clob_type: CLOB

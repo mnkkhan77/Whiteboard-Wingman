@@ -1,26 +1,42 @@
 package com.mockinterview.backend.config;
 
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * SimpleVectorStore (in-memory) is the pragmatic choice while there's no provisioned Pinecone
- * account/API key — swapping to PineconeVectorStore later is a one-bean change here, everything
- * else (ContentIngestionService, QuestionSelectionService) is written against the VectorStore
- * interface and doesn't care which implementation backs it. See PLAN.md §3.
+ * The VectorStore itself is Spring AI's auto-configured PgVectorStore (settings under
+ * spring.ai.vectorstore.pgvector in application.yml, table owned by Flyway V14) — everything
+ * else (ContentIngestionService, QuestionSelectionService, study packs) injects the plain
+ * VectorStore interface, so there's no store bean to declare here.
  *
- * Declared as the concrete SimpleVectorStore (not the VectorStore interface) so
- * ContentIngestionService can call its save/load(File) methods to persist across restarts;
- * QuestionSelectionService and anything else asking for a plain VectorStore is still satisfied
- * by this same bean since SimpleVectorStore is a subtype.
+ * What does need overriding is how PgVectorStore batches documents for embedding. Its default,
+ * TokenCountBatchingStrategy, is sized for OpenAI's 8191-token embedding input limit and throws
+ * outright ("Tokens in a single document exceeds the maximum number of allowed input tokens") on
+ * any single document over it — which several long handbook sections are. That limit doesn't
+ * apply to the local all-MiniLM-L6-v2 transformers model we actually embed with: its tokenizer
+ * (tokenizer.json) truncates and pads every input to a fixed 128 tokens, exactly as it did back when
+ * SimpleVectorStore embedded one document at a time with no batching check at all. So batches
+ * are just fixed-size chunks of documents, bounding memory per ONNX call; the autoconfig's
+ * default is @ConditionalOnMissingBean, so this bean replaces it.
  */
 @Configuration
 public class SpringAiConfig {
 
+    private static final int EMBEDDING_BATCH_SIZE = 64;
+
     @Bean
-    public SimpleVectorStore vectorStore(EmbeddingModel embeddingModel) {
-        return SimpleVectorStore.builder(embeddingModel).build();
+    public BatchingStrategy embeddingBatchingStrategy() {
+        return documents -> {
+            List<List<Document>> batches = new ArrayList<>();
+            for (int i = 0; i < documents.size(); i += EMBEDDING_BATCH_SIZE) {
+                batches.add(documents.subList(i, Math.min(i + EMBEDDING_BATCH_SIZE, documents.size())));
+            }
+            return batches;
+        };
     }
 }

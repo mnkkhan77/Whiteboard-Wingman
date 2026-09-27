@@ -3,15 +3,18 @@ spring:
     name: mock-interview-backend
 
   # Used only when nothing else says otherwise — a real -Dspring-boot.run.profiles=X,
-  # SPRING_PROFILES_ACTIVE env var, or deploy-time config always overrides this. Makes
-  # `mvn spring-boot:run` with zero flags "just work" against the file-based H2 dev DB.
+  # SPRING_PROFILES_ACTIVE env var, or deploy-time config always overrides this. "dev" only turns
+  # on dev conveniences (AdminSeeder) — every profile talks to the same PostgreSQL, started locally
+  # with `docker compose up -d` from the repo root.
   profiles:
     default: dev
 
+  # Defaults match the repo-root docker-compose.yml "postgres" service, which publishes on host
+  # port 5433 (not 5432) to stay clear of a natively installed PostgreSQL — see the comment there.
   datasource:
-    url: jdbc:mysql://localhost:3306/mock_interview?createDatabaseIfNotExist=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:wingman}
+    username: ${DB_USERNAME:wingman}
+    password: ${DB_PASSWORD:wingman}
 
   jpa:
     hibernate:
@@ -21,12 +24,19 @@ spring:
       hibernate:
         format_sql: true
 
-  # MySQL has no CLOB keyword — @Lob String fields map to LONGTEXT under MySQLDialect.
-  flyway:
-    placeholders:
-      clob_type: LONGTEXT
-
   ai:
+    vectorstore:
+      pgvector:
+        # Flyway (V14) owns the vector_store table — PgVectorStore must not try to create or drop
+        # it. schema-validation instead fails startup loudly if that table is missing.
+        initialize-schema: false
+        schema-validation: true
+        # Must match both V14's vector(384) and the local all-MiniLM-L6-v2 transformers model.
+        # Setting it explicitly also stops PgVectorStore from embedding a probe string at startup
+        # just to discover the dimension.
+        dimensions: 384
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
     openai:
       # Placeholder only — real per-user calls never use this bean, see PerRequestChatClientFactory.
       # Spring Boot autoconfiguration requires *some* value to be present even if unused at runtime.
@@ -36,7 +46,7 @@ spring:
     exclude:
       # Ingestion embeds via the local transformers model (no key needed, §3/§4 of PLAN.md) — without
       # this exclusion, the OpenAI starter also auto-configures an EmbeddingModel bean, and Spring
-      # can't pick one unambiguously when our VectorStore bean asks for a plain EmbeddingModel.
+      # can't pick one unambiguously when the auto-configured PgVectorStore asks for a plain EmbeddingModel.
       - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
 
 server:
@@ -57,7 +67,7 @@ judge0:
   base-url: ${JUDGE0_BASE_URL:http://localhost:2358}
 
 app:
-  # Disk caches so a restart doesn't silently wipe what /api/admin/ingest last populated — see
-  # ContentIngestionService and StaticQuestionBankService. Ingestion itself stays manual/admin-run.
-  vector-store-cache-path: ${VECTOR_STORE_CACHE_PATH:./data/vector-store.json}
+  # Disk cache so a restart doesn't silently wipe what /api/admin/ingest last generated for the MCQ
+  # bank — see StaticQuestionBankService. (Ingested RAG chunks need no such cache any more: they
+  # live in Postgres via pgvector.) Ingestion itself stays manual/admin-run.
   mcq-bank-cache-path: ${MCQ_BANK_CACHE_PATH:./data/mcq-bank-cache.json}

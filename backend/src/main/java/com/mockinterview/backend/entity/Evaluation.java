@@ -27,8 +27,8 @@ public class Evaluation {
     @Column(nullable = false)
     private Correctness correctness;
 
-    @Lob
-    @Column(nullable = false)
+    // TEXT, not @Lob — see the note on Answer.answerText.
+    @Column(nullable = false, columnDefinition = "text")
     private String feedback;
 
     @ElementCollection

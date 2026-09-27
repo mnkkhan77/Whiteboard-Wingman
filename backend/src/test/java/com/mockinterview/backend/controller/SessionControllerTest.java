@@ -16,8 +16,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Full-stack tests through the real Spring Security filter chain and an in-memory H2 database
- * (application-test.yml) — no LLM calls are exercised here, only auth/RBAC/validation, which is
+ * Full-stack tests through the real Spring Security filter chain and the Testcontainers PostgreSQL
+ * database (application-test.yml) — no LLM calls are exercised here, only auth/RBAC/validation, which is
  * everything reachable before an evaluation call would be made.
  */
 @SpringBootTest

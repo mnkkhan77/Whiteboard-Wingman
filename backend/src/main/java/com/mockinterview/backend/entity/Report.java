@@ -33,8 +33,8 @@ public class Report {
     @Column(name = "topic")
     private List<String> weakTopics = new ArrayList<>();
 
-    /** LLM-generated narrative summary — null in Phase 1, added in Phase 4. */
-    @Lob
+    /** LLM-generated narrative summary — null in Phase 1, added in Phase 4. TEXT, not @Lob — see Answer.answerText. */
+    @Column(columnDefinition = "text")
     private String summaryText;
 
     @Column(nullable = false)

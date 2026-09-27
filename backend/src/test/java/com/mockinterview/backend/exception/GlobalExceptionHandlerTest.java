@@ -18,12 +18,12 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void unexpectedExceptionsReturnAGenericMessageNotTheRawExceptionDetail() {
-        RuntimeException sensitive = new RuntimeException("db connection string: jdbc:mysql://internal-host/secret");
+        RuntimeException sensitive = new RuntimeException("db connection string: jdbc:postgresql://internal-host/secret");
 
         ResponseEntity<java.util.Map<String, String>> response = handler.handleUnexpected(sensitive);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().get("message")).doesNotContain("jdbc:mysql", "internal-host", "secret");
+        assertThat(response.getBody().get("message")).doesNotContain("jdbc:postgresql", "internal-host", "secret");
     }
 }

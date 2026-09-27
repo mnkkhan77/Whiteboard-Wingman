@@ -31,8 +31,8 @@ public class Question {
     @Column(nullable = false)
     private Difficulty difficulty;
 
-    @Lob
-    @Column(nullable = false)
+    // TEXT, not @Lob — see the note on Answer.answerText. Applies to every text column below too.
+    @Column(nullable = false, columnDefinition = "text")
     private String promptText;
 
     /** Traceability to the vector-store document this came from, once RAG is wired in (Phase 2). Null for the Phase 1 static bank. */
@@ -53,11 +53,11 @@ public class Question {
     private Integer correctOptionIndex;
 
     /** MCQ only: shown in the feedback after the candidate answers. */
-    @Lob
+    @Column(columnDefinition = "text")
     private String explanation;
 
     /** CODING only: describes the stdin/stdout contract the candidate's program must follow, so Run Code can validate it. */
-    @Lob
+    @Column(columnDefinition = "text")
     private String ioFormat;
 
     /** CODING only: sample input/output pairs used by the Run Code feature. Empty if this question has none. */
@@ -77,11 +77,10 @@ public class Question {
     @Embeddable
     @Data
     public static class TestCase {
-        @Lob
+        @Column(columnDefinition = "text")
         private String input;
 
-        @Lob
-        @Column(nullable = false)
+        @Column(nullable = false, columnDefinition = "text")
         private String expectedOutput;
     }
 }

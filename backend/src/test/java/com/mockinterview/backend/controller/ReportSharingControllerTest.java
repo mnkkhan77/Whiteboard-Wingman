@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Full-stack tests for the report-sharing endpoints, through the real security filter chain and
- * an in-memory H2 database — see SessionControllerTest for the same style. Sessions/reports are
+ * the Testcontainers PostgreSQL database — see SessionControllerTest for the same style. Sessions/reports are
  * built directly through the repositories rather than by playing an interview end to end, since
  * only the sharing behavior (ownership, idempotency, public visibility) is under test here.
  */
