@@ -103,6 +103,12 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Study Packs: async document pipeline with the Python doc-processor (docs/study-packs-contract.md). -->
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -135,6 +141,11 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<!-- Tests run against a real throwaway pgvector/pgvector:pg16 container (Docker required), so

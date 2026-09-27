@@ -13,6 +13,9 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -46,6 +49,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                 "message", e.getMessage(),
                 "code", "GUEST_LIMIT_REACHED"
+        ));
+    }
+
+    // Study Pack upload rejections — status and "code" come from the exception so each contract
+    // code (docs/study-packs-contract.md) keeps its own HTTP status (403/413/400).
+    @ExceptionHandler(StudyPackUploadException.class)
+    public ResponseEntity<Map<String, String>> handleStudyPackUpload(StudyPackUploadException e) {
+        return ResponseEntity.status(e.getStatus()).body(Map.of(
+                "message", e.getMessage(),
+                "code", e.getCode()
+        ));
+    }
+
+    // Thrown by the multipart resolver before the controller runs, for a file over
+    // spring.servlet.multipart.max-file-size (sized to the largest tier). Mapped to the same
+    // FILE_TOO_LARGE code as the per-tier check in StudyPackService so the client sees one error.
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+                "message", "File is larger than the maximum upload size.",
+                "code", StudyPackUploadException.FILE_TOO_LARGE
         ));
     }
 
@@ -99,6 +123,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, String>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         return ResponseEntity.badRequest().body(Map.of("message", "Invalid value for parameter: " + e.getName()));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<Map<String, String>> handleMissingPart(MissingServletRequestPartException e) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Missing multipart field: " + e.getRequestPartName()));
+    }
+
+    // Any other multipart parse failure (not multipart at all, truncated body...). Spring picks the
+    // closest exception type, so MaxUploadSizeExceededException (a subclass) still maps to 413 above.
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<Map<String, String>> handleMultipart(MultipartException e) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Malformed multipart request"));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

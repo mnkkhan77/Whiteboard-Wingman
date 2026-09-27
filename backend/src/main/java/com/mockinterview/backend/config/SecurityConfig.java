@@ -55,6 +55,9 @@ public class SecurityConfig {
                 // page too — only this GET is open, /api/topics/recommend still requires a login.
                 .requestMatchers(HttpMethod.GET, "/api/topics").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // Study Packs: any logged-in user (guests too — they can list/see limits; the
+                // upload itself rejects them with GUEST_UPLOAD_NOT_ALLOWED in StudyPackService).
+                .requestMatchers("/api/packs/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

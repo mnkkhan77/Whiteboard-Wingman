@@ -28,6 +28,12 @@ public class User {
     @Column(nullable = false)
     private Role role = Role.USER;
 
+    /** Gates Study Pack uploads (file size, formats, pack/page/chunk caps — see TierProperties).
+     *  Only an admin can change it; independent of role, so an ADMIN can still be on FREE. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Tier tier = Tier.FREE;
+
     /** True for a no-signup trial account created via POST /api/auth/guest — everything else about
      *  a guest is a normal authenticated User, so ownership checks and JWT auth don't need to
      *  special-case it. Only InterviewSessionService.startSession treats it differently, to cap

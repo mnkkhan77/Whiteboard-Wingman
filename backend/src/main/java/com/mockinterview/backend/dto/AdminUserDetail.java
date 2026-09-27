@@ -1,6 +1,7 @@
 package com.mockinterview.backend.dto;
 
 import com.mockinterview.backend.entity.Role;
+import com.mockinterview.backend.entity.Tier;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,6 +12,7 @@ public record AdminUserDetail(
         String email,
         String displayName,
         Role role,
+        Tier tier,
         LocalDateTime createdAt,
         LocalDateTime lastActiveAt,
         List<AdminSessionSummary> sessions

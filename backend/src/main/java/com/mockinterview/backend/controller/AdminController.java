@@ -4,9 +4,11 @@ import com.mockinterview.backend.dto.AdminStats;
 import com.mockinterview.backend.dto.AdminUserDetail;
 import com.mockinterview.backend.dto.AdminUserSummary;
 import com.mockinterview.backend.dto.IngestionSummary;
+import com.mockinterview.backend.dto.UpdateTierRequest;
 import com.mockinterview.backend.service.AdminAnalyticsService;
 import com.mockinterview.backend.service.ContentIngestionService;
 import com.mockinterview.backend.service.StaticQuestionBankService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +17,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -49,6 +53,12 @@ public class AdminController {
     @GetMapping("/users/{id}")
     public AdminUserDetail getUserDetail(@PathVariable Long id) {
         return adminAnalyticsService.getUserDetail(id);
+    }
+
+    /** Study Pack tier (docs/study-packs-contract.md); returns the updated user detail. */
+    @PutMapping("/users/{userId}/tier")
+    public AdminUserDetail updateUserTier(@PathVariable Long userId, @Valid @RequestBody UpdateTierRequest request) {
+        return adminAnalyticsService.updateTier(userId, request.tier());
     }
 
     @GetMapping("/stats")

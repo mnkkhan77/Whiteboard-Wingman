@@ -13,3 +13,16 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  # No broker in tests: don't start listener containers or try to create topics at startup.
+  # Controller tests mock KafkaTemplate; StudyPackKafkaIntegrationTest re-enables both against an
+  # embedded broker (spring-kafka-test).
+  kafka:
+    listener:
+      auto-startup: false
+    admin:
+      auto-create: false
+
+# Uploads written by controller tests go to a throwaway dir, never the dev ./data/uploads.
+app:
+  storage:
+    root: ./target/test-uploads

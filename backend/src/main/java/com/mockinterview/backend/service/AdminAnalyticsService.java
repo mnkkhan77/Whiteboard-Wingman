@@ -9,6 +9,7 @@ import com.mockinterview.backend.entity.Difficulty;
 import com.mockinterview.backend.entity.Evaluation;
 import com.mockinterview.backend.entity.InterviewSession;
 import com.mockinterview.backend.entity.Report;
+import com.mockinterview.backend.entity.Tier;
 import com.mockinterview.backend.entity.Topic;
 import com.mockinterview.backend.entity.User;
 import com.mockinterview.backend.repository.EvaluationRepository;
@@ -26,6 +27,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 /**
@@ -65,7 +67,7 @@ public class AdminAnalyticsService {
             List<InterviewSession> userSessions = sessionsByUserId.getOrDefault(u.getId(), List.of());
             Topic mostPracticed = mostFrequentTopic(userSessions);
             return new AdminUserSummary(
-                    u.getId(), u.getEmail(), u.getDisplayName(), u.getRole(),
+                    u.getId(), u.getEmail(), u.getDisplayName(), u.getRole(), u.getTier(),
                     u.getCreatedAt(), u.getLastActiveAt(),
                     userSessions.size(), averageScoreByUserId.get(u.getId()), mostPracticed);
         });
@@ -89,8 +91,19 @@ public class AdminAnalyticsService {
                 .toList();
 
         return new AdminUserDetail(
-                user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(),
+                user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(), user.getTier(),
                 user.getCreatedAt(), user.getLastActiveAt(), sessionSummaries);
+    }
+
+    /** PUT /admin/users/{id}/tier. The only write in this otherwise read-only service — it lives
+     *  here because it answers with the same AdminUserDetail the dashboard already renders. A tier
+     *  change only affects future uploads/embeddings; existing packs are left as they are. */
+    @Transactional
+    public AdminUserDetail updateTier(Long userId, Tier tier) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        user.setTier(tier); // managed entity: flushed on commit, no save() needed
+        return getUserDetail(userId);
     }
 
     public AdminStats getStats() {

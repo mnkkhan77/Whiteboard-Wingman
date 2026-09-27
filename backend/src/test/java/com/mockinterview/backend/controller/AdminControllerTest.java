@@ -2,6 +2,7 @@ package com.mockinterview.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mockinterview.backend.entity.Role;
+import com.mockinterview.backend.entity.Tier;
 import com.mockinterview.backend.entity.User;
 import com.mockinterview.backend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -15,9 +16,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -112,6 +115,60 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.sessions").isArray())
                 .andExpect(jsonPath("$.sessions").isEmpty());
+    }
+
+    @Test
+    void updateTierIsRejectedForAnOrdinaryUser() throws Exception {
+        String token = registerAndGetUserToken();
+        mockMvc.perform(put("/api/admin/users/1/tier").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"tier\":\"MAX\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateTierSucceedsForAnAdminAndIsReflectedInDetailAndList() throws Exception {
+        String email = "tier-" + UUID.randomUUID() + "@example.com";
+        register(email);
+        Long userId = userRepository.findByEmail(email).orElseThrow().getId();
+        String adminToken = registerAndGetAdminToken();
+
+        mockMvc.perform(get("/api/admin/users/" + userId).header("Authorization", "Bearer " + adminToken))
+                .andExpect(jsonPath("$.tier").value("FREE"));
+
+        mockMvc.perform(put("/api/admin/users/" + userId + "/tier").header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"tier\":\"PRO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.tier").value("PRO"))
+                .andExpect(jsonPath("$.sessions").isArray());
+
+        assertThat(userRepository.findById(userId).orElseThrow().getTier()).isEqualTo(Tier.PRO);
+        mockMvc.perform(get("/api/admin/users?size=100").header("Authorization", "Bearer " + adminToken))
+                .andExpect(jsonPath("$.content[?(@.email == '" + email + "')].tier").value("PRO"));
+    }
+
+    @Test
+    void updateTierRejectsAnUnknownOrMissingTier() throws Exception {
+        String email = "badtier-" + UUID.randomUUID() + "@example.com";
+        register(email);
+        Long userId = userRepository.findByEmail(email).orElseThrow().getId();
+        String adminToken = registerAndGetAdminToken();
+
+        mockMvc.perform(put("/api/admin/users/" + userId + "/tier").header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"tier\":\"GOLD\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/api/admin/users/" + userId + "/tier").header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateTierReturns404ForAnUnknownUser() throws Exception {
+        String adminToken = registerAndGetAdminToken();
+        mockMvc.perform(put("/api/admin/users/99999999/tier").header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"tier\":\"PRO\"}"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

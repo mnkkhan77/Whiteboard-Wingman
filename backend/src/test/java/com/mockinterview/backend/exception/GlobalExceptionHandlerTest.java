@@ -26,4 +26,24 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().get("message")).doesNotContain("jdbc:postgresql", "internal-host", "secret");
     }
+
+    // MockMvc bypasses the servlet multipart size limit, so the 413 mapping for an upload over
+    // spring.servlet.multipart.max-file-size is asserted on the handler directly.
+    @Test
+    void anUploadOverTheMultipartLimitMapsTo413FileTooLarge() {
+        ResponseEntity<java.util.Map<String, String>> response =
+                handler.handleMaxUploadSize(new org.springframework.web.multipart.MaxUploadSizeExceededException(209_715_200L));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
+        assertThat(response.getBody()).containsEntry("code", "FILE_TOO_LARGE").containsKey("message");
+    }
+
+    @Test
+    void studyPackUploadRejectionsKeepTheirOwnStatusAndCode() {
+        ResponseEntity<java.util.Map<String, String>> response = handler.handleStudyPackUpload(
+                new StudyPackUploadException(HttpStatus.FORBIDDEN, StudyPackUploadException.PACK_LIMIT_REACHED, "limit"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).containsEntry("code", "PACK_LIMIT_REACHED").containsEntry("message", "limit");
+    }
 }

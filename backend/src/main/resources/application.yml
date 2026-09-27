@@ -49,6 +49,36 @@ spring:
       # can't pick one unambiguously when the auto-configured PgVectorStore asks for a plain EmbeddingModel.
       - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
 
+  # Study Packs pipeline (docs/study-packs-contract.md). Inside the compose network use kafka:29092.
+  # Values are plain JSON strings (StringSerializer/Deserializer): DocumentEventPublisher and
+  # DocumentEventsListener do the Jackson (de)serialization, so no Java type headers hit the wire.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+        # Bounds how long send() may block the upload request when the broker is unreachable.
+        max.block.ms: 10000
+    consumer:
+      group-id: wingman-backend
+      auto-offset-reset: earliest
+      # Embedding runs on the listener thread (see DocumentEventsListener): one record per poll and
+      # a 30-min poll interval so a slow CPU embedding of a big pack never triggers a rebalance.
+      max-poll-records: 1
+      properties:
+        max.poll.interval.ms: 1800000
+    listener:
+      # Commit each offset only after its handler returned — at-least-once, handlers are idempotent.
+      ack-mode: record
+
+  # Must be >= the largest tier's maxFileBytes (MAX = 200MB); the per-tier limit is enforced in
+  # StudyPackService, and anything over this cap maps to 413 FILE_TOO_LARGE in GlobalExceptionHandler.
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 201MB
+
 server:
   port: 8080
 
@@ -71,3 +101,39 @@ app:
   # bank — see StaticQuestionBankService. (Ingested RAG chunks need no such cache any more: they
   # live in Postgres via pgvector.) Ingestion itself stays manual/admin-run.
   mcq-bank-cache-path: ${MCQ_BANK_CACHE_PATH:./data/mcq-bank-cache.json}
+
+  # Study Packs — shared with the doc-processor (its STORAGE_ROOT; docker-compose mounts this dir).
+  # Override with the APP_STORAGE_ROOT env var (Spring relaxed binding).
+  storage:
+    root: ./data/uploads
+
+  kafka:
+    topics:
+      uploaded: wingman.document.uploaded
+      parsed: wingman.document.parsed
+      failed: wingman.document.failed
+
+  # Per-tier Study Pack limits (docs/study-packs-contract.md "Tiers"); served to the frontend via
+  # GET /api/packs/limits. max-packs -1 = unlimited. File sizes in bytes (10/50/200 MB).
+  tiers:
+    free:
+      max-file-bytes: 10485760
+      max-pages: 50
+      max-packs: 3
+      max-chunks-per-pack: 300
+      ocr-enabled: false
+      allowed-extensions: [pdf]
+    pro:
+      max-file-bytes: 52428800
+      max-pages: 300
+      max-packs: 20
+      max-chunks-per-pack: 2000
+      ocr-enabled: true
+      allowed-extensions: [pdf, docx]
+    max:
+      max-file-bytes: 209715200
+      max-pages: 1000
+      max-packs: -1
+      max-chunks-per-pack: 6000
+      ocr-enabled: true
+      allowed-extensions: [pdf, docx, pptx, png, jpg, jpeg]
