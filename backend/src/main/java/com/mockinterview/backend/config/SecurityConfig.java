@@ -2,6 +2,7 @@ package com.mockinterview.backend.config;
 
 import com.mockinterview.backend.security.JwtAuthFilter;
 import com.mockinterview.backend.security.UserDetailsServiceImpl;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -48,6 +49,11 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .authorizeHttpRequests(auth -> auth
+                // Streaming responses (pack chat SSE) finish with an ASYNC re-dispatch of a request
+                // whose original REQUEST dispatch was already authenticated and authorized below.
+                // The stateless JWT context isn't carried over to that re-dispatch (JwtAuthFilter
+                // is once-per-request), so without this it would be rejected mid-response.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
@@ -55,8 +61,9 @@ public class SecurityConfig {
                 // page too — only this GET is open, /api/topics/recommend still requires a login.
                 .requestMatchers(HttpMethod.GET, "/api/topics").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                // Study Packs: any logged-in user (guests too — they can list/see limits; the
-                // upload itself rejects them with GUEST_UPLOAD_NOT_ALLOWED in StudyPackService).
+                // Study Packs, including /api/packs/{id}/chat: any logged-in user (guests too — they
+                // can list/see limits; the upload itself rejects them with GUEST_UPLOAD_NOT_ALLOWED
+                // in StudyPackService, so a guest never owns a pack to chat with).
                 .requestMatchers("/api/packs/**").authenticated()
                 .anyRequest().authenticated()
             )

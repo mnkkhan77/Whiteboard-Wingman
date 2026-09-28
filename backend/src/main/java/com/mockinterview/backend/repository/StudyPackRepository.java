@@ -28,6 +28,8 @@ public interface StudyPackRepository extends JpaRepository<StudyPack, Long> {
 
     Optional<StudyPack> findByIdAndOwner(Long id, User owner);
 
+    boolean existsByIdAndOwner(Long id, User owner);
+
     long countByOwner(User owner);
 
     /** The embedding step needs the owner's current tier (chunk cap) outside any transaction. */

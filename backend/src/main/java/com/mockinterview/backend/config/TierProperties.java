@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Per-tier Study Pack limits (app.tiers.{free,pro,max}.* in application.yml), the single source
- * of truth the frontend reads back through GET /api/packs/limits rather than hard-coding them
- * (docs/study-packs-contract.md "Tiers").
+ * Per-tier Study Pack limits (app.tiers.{free,pro,max}.* in application.yml), including the monthly
+ * pack-chat token budget — the single source of truth the frontend reads back through
+ * GET /api/packs/limits rather than hard-coding them (docs/study-packs-contract.md "Tiers").
  */
 @ConfigurationProperties(prefix = "app.tiers")
 public record TierProperties(TierLimits free, TierLimits pro, TierLimits max) {
@@ -27,8 +27,9 @@ public record TierProperties(TierLimits free, TierLimits pro, TierLimits max) {
     }
 
     /**
-     * @param maxPacks          -1 means unlimited
-     * @param allowedExtensions lower-case, without the leading dot
+     * @param maxPacks           -1 means unlimited
+     * @param allowedExtensions  lower-case, without the leading dot
+     * @param chatTokensPerMonth pack-chat LLM budget (prompt + completion tokens) per calendar month, UTC
      */
     public record TierLimits(
             long maxFileBytes,
@@ -36,7 +37,8 @@ public record TierProperties(TierLimits free, TierLimits pro, TierLimits max) {
             int maxPacks,
             int maxChunksPerPack,
             boolean ocrEnabled,
-            List<String> allowedExtensions
+            List<String> allowedExtensions,
+            long chatTokensPerMonth
     ) {
         public TierLimits {
             allowedExtensions = allowedExtensions == null ? List.of()

@@ -44,13 +44,15 @@ public class StudyPackService {
     private final StorageService storageService;
     private final TierProperties tierProperties;
     private final ApplicationEventPublisher eventPublisher;
+    private final ChatQuotaService chatQuotaService;
 
     @Transactional(readOnly = true)
     public PackLimitsDto limits(User user) {
         TierLimits limits = tierProperties.forTier(user.getTier());
         return new PackLimitsDto(user.getTier(), limits.maxFileBytes(), limits.maxPages(), limits.maxPacks(),
                 limits.maxChunksPerPack(), limits.ocrEnabled(), limits.allowedExtensions(),
-                studyPackRepository.countByOwner(user));
+                studyPackRepository.countByOwner(user), limits.chatTokensPerMonth(),
+                chatQuotaService.usedThisMonth(user.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -95,6 +97,7 @@ public class StudyPackService {
         return PackDto.from(pack);
     }
 
+    /** The pack's chat history goes with it via ON DELETE CASCADE (V18), in the same statement. */
     @Transactional
     public void delete(User user, Long packId) {
         StudyPack pack = findOwned(user, packId);

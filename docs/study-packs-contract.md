@@ -159,3 +159,68 @@ Upload error codes (4xx body `code`): `GUEST_UPLOAD_NOT_ALLOWED` (403), `PACK_LI
 `FILE_TOO_LARGE` (413), `UNSUPPORTED_FORMAT` (400), `EMPTY_FILE` (400).
 Pack `errorCode` on `FAILED`: the doc-processor codes above plus `CHUNK_LIMIT_EXCEEDED` and
 `EMBEDDING_FAILED` (set by the backend).
+
+## Chat with a pack (Phase 3)
+
+Grounded Q&A over one READY pack: retrieve the pack's closest chunks from pgvector, answer with
+the **server-side Groq key** (`GROQ_API_KEY`, never the user's key), cite sources by number.
+
+### Tier quota
+
+Monthly LLM token budget per user (prompt + completion tokens, calendar month, UTC), config
+`app.tiers.*.chat-tokens-per-month`:
+
+| | FREE | PRO | MAX |
+|---|---|---|---|
+| chatTokensPerMonth | 20000 | 500000 | 2000000 |
+
+A request is refused when `used >= limit` before calling the LLM; the actual usage of an answer
+is added afterwards (so one answer can overshoot the limit slightly — accepted).
+
+`PackLimitsDto` gains `chatTokensPerMonth` and `chatTokensUsed`.
+
+### REST
+
+| Method | Path | Body / notes | Response |
+|---|---|---|---|
+| GET | `/api/packs/{id}/chat` | owner only; last 50 messages, oldest first | `ChatHistoryDto` |
+| POST | `/api/packs/{id}/chat` | `{ "message": "..." }` (1–2000 chars, trimmed) | `text/event-stream` (below) |
+| DELETE | `/api/packs/{id}/chat` | clears this pack's history | 204 |
+
+Refusals **before** streaming starts are normal JSON errors `{ message, code }`:
+`PACK_NOT_READY` (409), `CHAT_QUOTA_EXCEEDED` (429), `CHAT_UNAVAILABLE` (503, no server key
+configured), validation (400), not found / not owner (404).
+
+### SSE stream (POST response)
+
+Events, in order (`data` is JSON):
+
+1. `sources` — `{ "sources": [ChatSourceDto...] }` — the retrieved chunks, numbered from 1.
+   May be empty; then the answer says the document doesn't cover it and no LLM call is made.
+2. `delta` — `{ "text": "..." }` — repeated; append in order.
+3. `done` — `{ "messageId": 123, "citedSources": [1, 3], "usage": { "promptTokens": 900,
+   "completionTokens": 150, "totalTokens": 1050 }, "quota": { "used": 5050, "limit": 20000 } }`
+   — `citedSources` = the `[n]` markers actually present in the answer.
+4. `error` — `{ "code": "LLM_RATE_LIMITED" | "LLM_ERROR", "message": "..." }` — instead of `done`
+   if the LLM fails mid-stream. Partial text already streamed is not persisted.
+
+### DTOs
+
+```json
+// ChatSourceDto
+{ "n": 1, "page": 3, "pageEnd": 4, "section": "Chapter 2 > Transactions", "snippet": "first ~300 chars" }
+
+// ChatMessageDto
+{ "id": 123, "role": "USER" | "ASSISTANT", "content": "...", "sources": [ChatSourceDto...],
+  "citedSources": [1, 3], "createdAt": "2026-09-27T10:15:30" }
+// sources/citedSources are empty arrays on USER messages.
+
+// ChatHistoryDto
+{ "messages": [ChatMessageDto...], "quota": { "used": 5050, "limit": 20000 } }
+```
+
+### Answer format
+
+Plain text with light markdown (paragraphs, `-` bullets, `code`). Citations are inline `[n]`
+markers referring to `sources[n-1]`. The model is instructed to answer only from the sources and
+to say so when they don't contain the answer.

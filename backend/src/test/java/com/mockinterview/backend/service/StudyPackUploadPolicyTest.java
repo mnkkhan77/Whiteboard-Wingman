@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class StudyPackUploadPolicyTest {
 
-    private static final TierLimits FREE = new TierLimits(10L * 1024 * 1024, 50, 3, 300, false, List.of("pdf"));
-    private static final TierLimits PRO = new TierLimits(50L * 1024 * 1024, 300, 20, 2000, true, List.of("pdf", "docx"));
+    private static final TierLimits FREE = new TierLimits(10L * 1024 * 1024, 50, 3, 300, false, List.of("pdf"), 20_000);
+    private static final TierLimits PRO = new TierLimits(50L * 1024 * 1024, 300, 20, 2000, true, List.of("pdf", "docx"), 500_000);
     private static final TierLimits MAX = new TierLimits(200L * 1024 * 1024, 1000, -1, 6000, true,
-            List.of("pdf", "docx", "pptx", "png", "jpg", "jpeg"));
+            List.of("pdf", "docx", "pptx", "png", "jpg", "jpeg"), 2_000_000);
 
     private static User user(Tier tier, boolean guest) {
         User user = new User();
@@ -102,7 +102,7 @@ class StudyPackUploadPolicyTest {
     @Test
     void tierPropertiesResolveEachTierAndNormalizeExtensions() {
         TierProperties props = new TierProperties(FREE, PRO,
-                new TierLimits(1, 1, -1, 1, true, List.of("PDF", "Png")));
+                new TierLimits(1, 1, -1, 1, true, List.of("PDF", "Png"), 1));
         assertThat(props.forTier(Tier.FREE)).isSameAs(FREE);
         assertThat(props.forTier(Tier.PRO)).isSameAs(PRO);
         assertThat(props.forTier(Tier.MAX).allowedExtensions()).containsExactly("pdf", "png");

@@ -12,9 +12,11 @@ import org.springframework.stereotype.Service;
  * for an end-user's chat/evaluation calls, and the key passed in here is never persisted
  * (not to a DB column, not to a log line) — see PLAN.md §8.
  *
+ * The one exception is pack chat, which runs on the server's own key (ServerChatClientProvider);
+ * it reuses {@link #build} so both paths construct the provider client the same way.
+ *
  * Groq exposes an OpenAI-compatible chat-completions API, so both providers reuse the same
  * OpenAiChatModel client, just pointed at a different base URL / default model.
- * [VERIFY] the exact OpenAiApi/OpenAiChatModel builder API against the pinned Spring AI version.
  */
 @Service
 public class PerRequestChatClientFactory {
@@ -31,22 +33,33 @@ public class PerRequestChatClientFactory {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalArgumentException("Missing X-LLM-Api-Key header");
         }
+        return build(apiKey, provider, OpenAiChatOptions.builder().model(modelOverride).build());
+    }
 
-        String baseUrl = provider == Provider.GROQ ? GROQ_BASE_URL : OPENAI_BASE_URL;
-        String model = modelOverride != null && !modelOverride.isBlank()
-                ? modelOverride
-                : (provider == Provider.GROQ ? GROQ_DEFAULT_MODEL : OPENAI_DEFAULT_MODEL);
+    /**
+     * A client for an explicit key/provider with the given default options (model, token cap,
+     * streaming usage...). A null/blank model in the options falls back to the provider's default.
+     */
+    public ChatClient build(String apiKey, Provider provider, OpenAiChatOptions defaultOptions) {
+        OpenAiChatOptions options = defaultOptions.copy();
+        if (options.getModel() == null || options.getModel().isBlank()) {
+            options.setModel(defaultModel(provider));
+        }
 
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .apiKey(apiKey)
-                .baseUrl(baseUrl)
+                .baseUrl(provider == Provider.GROQ ? GROQ_BASE_URL : OPENAI_BASE_URL)
                 .build();
 
         OpenAiChatModel chatModel = OpenAiChatModel.builder()
                 .openAiApi(openAiApi)
-                .defaultOptions(OpenAiChatOptions.builder().model(model).build())
+                .defaultOptions(options)
                 .build();
 
         return ChatClient.builder(chatModel).build();
+    }
+
+    static String defaultModel(Provider provider) {
+        return provider == Provider.GROQ ? GROQ_DEFAULT_MODEL : OPENAI_DEFAULT_MODEL;
     }
 }

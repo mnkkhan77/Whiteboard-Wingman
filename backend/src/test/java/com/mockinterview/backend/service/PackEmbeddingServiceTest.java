@@ -52,9 +52,9 @@ class PackEmbeddingServiceTest {
     void setUp() {
         repository = mock(StudyPackRepository.class);
         vectorStore = mock(VectorStore.class);
-        TierLimits free = new TierLimits(10_485_760, 50, 3, 300, false, List.of("pdf"));
-        TierLimits pro = new TierLimits(52_428_800, 300, 20, 2000, true, List.of("pdf", "docx"));
-        TierLimits max = new TierLimits(209_715_200, 1000, -1, 6000, true, List.of("pdf"));
+        TierLimits free = new TierLimits(10_485_760, 50, 3, 300, false, List.of("pdf"), 20_000);
+        TierLimits pro = new TierLimits(52_428_800, 300, 20, 2000, true, List.of("pdf", "docx"), 500_000);
+        TierLimits max = new TierLimits(209_715_200, 1000, -1, 6000, true, List.of("pdf"), 2_000_000);
         StorageService storage = new StorageService(new StorageProperties(storageRoot.toString()));
         service = new PackEmbeddingService(repository, storage, vectorStore,
                 new TierProperties(free, pro, max), objectMapper);
