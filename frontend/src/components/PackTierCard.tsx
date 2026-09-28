@@ -1,4 +1,5 @@
 import { TierBadge } from "./TierBadge";
+import { QuotaMeter } from "./QuotaMeter";
 import { formatBytes, formatExtensions, formatPackQuota } from "../utils/packs";
 import type { PackLimitsDto } from "../types/api";
 
@@ -25,6 +26,10 @@ export function PackTierCard({ limits }: { limits: PackLimitsDto }) {
         ))}
       </div>
       <p className="progress-label">Allowed formats: {formatExtensions(limits.allowedExtensions)}</p>
+      {/* Guarded so the card still renders against a backend that predates pack chat. */}
+      {limits.chatTokensPerMonth != null && limits.chatTokensUsed != null && (
+        <QuotaMeter quota={{ used: limits.chatTokensUsed, limit: limits.chatTokensPerMonth }} />
+      )}
     </section>
   );
 }

@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { formatBytes, isPackInFlight, packErrorMessage } from "../utils/packs";
 import type { PackDto, PackLimitsDto } from "../types/api";
 
 // Next-phase features, shown disabled on READY packs so the roadmap is visible.
 const COMING_SOON_ACTIONS = [
-  { label: "Chat", icon: "💬" },
   { label: "Quiz", icon: "📝" },
   { label: "Flashcards", icon: "🗂️" },
   { label: "Course", icon: "🎓" },
@@ -103,6 +103,13 @@ export function PackListItem({ pack, limits, onDelete }: PackListItemProps) {
 
       {pack.status === "READY" && (
         <div className="pack-button-row">
+          <Link
+            to={`/packs/${pack.id}/chat`}
+            className="button primary pack-small-button"
+            aria-label={`Chat with ${pack.title}`}
+          >
+            <span aria-hidden>💬</span> Chat
+          </Link>
           {COMING_SOON_ACTIONS.map((a) => (
             <button
               key={a.label}

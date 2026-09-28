@@ -10,6 +10,11 @@ export function listPacks(token: string) {
   return apiFetch<PackDto[]>("/packs", { token });
 }
 
+/** Owner only — 404 for someone else's pack. */
+export function getPack(token: string, packId: number, signal?: AbortSignal) {
+  return apiFetch<PackDto>(`/packs/${packId}`, { token, signal });
+}
+
 /** Multipart upload — `title` is optional (backend defaults it to the file name without extension). */
 export function uploadPack(token: string, file: File, title?: string, onProgress?: (percent: number) => void) {
   const form = new FormData();

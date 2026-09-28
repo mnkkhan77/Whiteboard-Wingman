@@ -266,4 +266,79 @@ export interface PackLimitsDto {
   /** Lower-case, no leading dot, e.g. ["pdf", "docx"] */
   allowedExtensions: string[];
   packsUsed: number;
+  /** Monthly LLM token budget for pack chat (prompt + completion, calendar month UTC). */
+  chatTokensPerMonth: number;
+  chatTokensUsed: number;
 }
+
+// --- Chat with a pack (Phase 3) ---
+
+export type ChatRole = "USER" | "ASSISTANT";
+
+/** One retrieved chunk; `n` is its 1-based citation number (`[n]` in the answer). */
+export interface ChatSourceDto {
+  n: number;
+  page: number | null;
+  pageEnd: number | null;
+  section: string | null;
+  snippet: string;
+}
+
+/** `sources` / `citedSources` are empty arrays on USER messages. */
+export interface ChatMessageDto {
+  id: number;
+  role: ChatRole;
+  content: string;
+  sources: ChatSourceDto[];
+  citedSources: number[];
+  createdAt: string;
+}
+
+export interface ChatQuotaDto {
+  used: number;
+  limit: number;
+}
+
+export interface ChatHistoryDto {
+  /** Last 50 messages, oldest first. */
+  messages: ChatMessageDto[];
+  quota: ChatQuotaDto;
+}
+
+export interface ChatUsageDto {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+/** `data` of the SSE `sources` event. */
+export interface ChatSourcesEvent {
+  sources: ChatSourceDto[];
+}
+
+/** `data` of the SSE `delta` event. */
+export interface ChatDeltaEvent {
+  text: string;
+}
+
+/** `data` of the SSE `done` event. */
+export interface ChatDoneEvent {
+  messageId: number;
+  citedSources: number[];
+  usage: ChatUsageDto;
+  quota: ChatQuotaDto;
+}
+
+/** `data` of the SSE `error` event (sent instead of `done` when the LLM fails mid-stream). */
+export interface ChatErrorEvent {
+  code: "LLM_RATE_LIMITED" | "LLM_ERROR";
+  message: string;
+}
+
+/** Every `code` the chat endpoints can produce (pre-stream JSON errors + mid-stream `error` events). */
+export type ChatErrorCode =
+  | "PACK_NOT_READY"
+  | "CHAT_QUOTA_EXCEEDED"
+  | "CHAT_UNAVAILABLE"
+  | "LLM_RATE_LIMITED"
+  | "LLM_ERROR";
