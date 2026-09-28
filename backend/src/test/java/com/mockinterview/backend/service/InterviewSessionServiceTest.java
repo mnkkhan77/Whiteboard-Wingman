@@ -6,7 +6,6 @@ import com.mockinterview.backend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
@@ -41,14 +40,32 @@ class InterviewSessionServiceTest {
     @Mock private ChatClient chatClient;
     @Mock private ChatClient.ChatClientRequestSpec requestSpec;
     @Mock private ChatClient.CallResponseSpec callResponseSpec;
+    // Phase 4 collaborators: pack-only paths, never reached by these handbook-topic tests.
+    @Mock private PackQuestionSource packQuestionSource;
+    @Mock private PackQuizService packQuizService;
+    @Mock private ServerChatClientProvider serverChatClientProvider;
+    @Mock private MeteredLlmCall meteredLlmCall;
+    @Mock private StudyPackRepository studyPackRepository;
 
-    @InjectMocks
     private InterviewSessionService service;
+
+    /** Real handbook source + LLM resolver around the mocks above, so the tests keep stubbing
+     *  questionBank / questionSelectionService / chatClientFactory exactly as before. */
+    private InterviewSessionService newService() {
+        return new InterviewSessionService(sessionRepository, questionRepository, answerRepository,
+                evaluationRepository, reportRepository,
+                new HandbookQuestionSource(questionBank, questionSelectionService), packQuestionSource,
+                adaptiveDifficultyService,
+                new SessionLlmResolver(chatClientFactory, serverChatClientProvider, meteredLlmCall,
+                        new com.mockinterview.backend.config.QuizProperties(null, null, null, null, null, null, null, null, null, null, null)),
+                codeExecutionService, packQuizService, new PackTitleLookup(studyPackRepository));
+    }
 
     private User user;
 
     @BeforeEach
     void setUp() {
+        service = newService();
         user = new User();
         user.setId(1L);
         user.setEmail("candidate@example.com");

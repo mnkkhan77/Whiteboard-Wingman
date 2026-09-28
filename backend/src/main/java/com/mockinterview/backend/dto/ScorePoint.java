@@ -9,6 +9,8 @@ public record ScorePoint(
         Long sessionId,
         Topic topic,
         LocalDateTime completedAt,
-        int overallScore
+        int overallScore,
+        Long packId,
+        String packTitle
 ) {
 }

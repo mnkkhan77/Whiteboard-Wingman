@@ -16,7 +16,9 @@ public record QuestionResponse(
         Difficulty difficulty,
         List<String> options,
         String ioFormat,
-        List<TestCaseDto> testCases
+        List<TestCaseDto> testCases,
+        Long packId,
+        String packTitle
 ) {
     public record TestCaseDto(String input, String expectedOutput) {
         public static TestCaseDto from(Question.TestCase tc) {
@@ -25,6 +27,11 @@ public record QuestionResponse(
     }
 
     public static QuestionResponse from(Question q) {
+        return from(q, PackRef.NONE);
+    }
+
+    /** Never includes the correct option, explanation or reference answer: those stay server-side. */
+    public static QuestionResponse from(Question q, PackRef pack) {
         return new QuestionResponse(
                 q.getId(), q.getSequenceNumber(), q.getTopic(), q.getPromptText(), q.getQuestionType(), q.getDifficulty(),
                 // List.copyOf forces the lazy collection to actually load here, while the caller's
@@ -34,7 +41,9 @@ public record QuestionResponse(
                 // already does implicitly, which is why only options ever surfaced this bug).
                 List.copyOf(q.getOptions()),
                 q.getIoFormat(),
-                q.getTestCases().stream().map(TestCaseDto::from).toList()
+                q.getTestCases().stream().map(TestCaseDto::from).toList(),
+                pack.packId(),
+                pack.packTitle()
         );
     }
 }

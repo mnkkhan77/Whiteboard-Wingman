@@ -147,9 +147,9 @@ app:
       allowed-extensions: [pdf, docx, pptx, png, jpg, jpeg]
       chat-tokens-per-month: 2000000
 
-  # "Chat with a pack" (docs/study-packs-contract.md "Chat with a pack"). Unlike every other LLM
-  # feature this uses ONE server-side key (never the user's own). Leave GROQ_API_KEY empty to turn
-  # chat off: it then answers 503 CHAT_UNAVAILABLE, the rest of the app is unaffected.
+  # "Chat with a pack" and "Quiz from a pack" (docs/study-packs-contract.md). Unlike every other LLM
+  # feature these use ONE server-side key (never the user's own). Leave GROQ_API_KEY empty to turn
+  # them off: they then answer 503 CHAT_UNAVAILABLE, the rest of the app is unaffected.
   llm:
     server:
       api-key: ${GROQ_API_KEY:}
@@ -157,6 +157,9 @@ app:
       model: openai/gpt-oss-20b
       # max_completion_tokens; gpt-oss spends part of it on hidden reasoning, hence effort "low".
       max-output-tokens: 800
+      # Non-streaming JSON calls (quiz generation batches of up to 8 questions, grading, report
+      # narrative) need more room than one chat answer.
+      structured-max-output-tokens: 4096
       temperature: 0.2
       reasoning-effort: low
 
@@ -171,3 +174,19 @@ app:
     # Previous question/answer pairs sent along for follow-up questions.
     history-turns: 3
     max-message-chars: 2000
+
+  # Question-bank generation for "quiz from a pack" — see QuizProperties. 12 chunks spread across the
+  # document, 4 sequential LLM calls of 3 chunks / 6 questions each, 24 questions in total.
+  quiz:
+    target-questions: 24
+    min-questions: 2
+    max-batches: 4
+    chunks-per-batch: 3
+    max-questions-per-batch: 8
+    rate-limit-retries: 2
+    rate-limit-backoff: 20s
+    generation-threads: 2
+    queue-capacity: 20
+    # Grading / report narrative of a pack quiz: one short retry of a 429, a user request is waiting.
+    session-rate-limit-retries: 1
+    session-rate-limit-backoff: 5s

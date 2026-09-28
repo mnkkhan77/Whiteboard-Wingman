@@ -8,6 +8,7 @@ import com.mockinterview.backend.dto.PackLimitsDto;
 import com.mockinterview.backend.entity.User;
 import com.mockinterview.backend.repository.UserRepository;
 import com.mockinterview.backend.service.PackChatService;
+import com.mockinterview.backend.service.PackQuizService;
 import com.mockinterview.backend.service.StudyPackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,9 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 
-/** Study Packs REST API (docs/study-packs-contract.md "REST API" and "Chat with a pack"). Every
- *  route is authenticated (SecurityConfig) and scoped to the caller's own packs. */
+/** Study Packs REST API (docs/study-packs-contract.md "REST API", "Chat with a pack" and "Quiz from
+ *  a pack"). Every route is authenticated (SecurityConfig) and scoped to the caller's own packs.
+ *  A quiz itself is started through the existing POST /api/sessions with a packId. */
 @RestController
 @RequestMapping("/api/packs")
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class StudyPackController {
 
     private final StudyPackService studyPackService;
     private final PackChatService packChatService;
+    private final PackQuizService packQuizService;
     private final UserRepository userRepository;
 
     // Literal path segment, resolved before the sibling "/{id}" mapping — no routing collision.
@@ -84,6 +87,13 @@ public class StudyPackController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void clearChat(@PathVariable Long id, Authentication auth) {
         packChatService.clearHistory(resolveUser(auth), id);
+    }
+
+    /** 202: the bank is written in the background; poll GET /api/packs/{id} for quizStatus. */
+    @PostMapping("/{id}/quiz/generate")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PackDto generateQuiz(@PathVariable Long id, Authentication auth) {
+        return packQuizService.requestGeneration(resolveUser(auth), id);
     }
 
     private User resolveUser(Authentication auth) {

@@ -15,6 +15,7 @@ import com.mockinterview.backend.entity.Topic;
  * topic/topicsRemaining reflect the session's live (possibly already-advanced) state; a refresh
  * can't recover which numbered topic-of-N the candidate was on (that ordering only lives in the
  * frontend's own navigation state), just which topic is current and how many more are queued.
+ * packId/packTitle are only set for a study-pack quiz (topic STUDY_PACK).
  */
 public record SessionResumeResponse(
         SessionStatus status,
@@ -22,6 +23,8 @@ public record SessionResumeResponse(
         QuestionResponse currentQuestion,
         QuestionType pendingSectionType,
         Topic topic,
-        int topicsRemaining
+        int topicsRemaining,
+        Long packId,
+        String packTitle
 ) {
 }

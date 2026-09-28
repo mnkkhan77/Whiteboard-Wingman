@@ -224,3 +224,77 @@ Events, in order (`data` is JSON):
 Plain text with light markdown (paragraphs, `-` bullets, `code`). Citations are inline `[n]`
 markers referring to `sources[n-1]`. The model is instructed to answer only from the sources and
 to say so when they don't contain the answer.
+
+## Quiz from a pack (Phase 4)
+
+A pack gets an LLM-generated **question bank** (MCQ + conceptual, grounded in its chunks). A quiz
+is a normal interview session whose questions come from that bank, so grading, adaptive
+difficulty, timed mode, reports, sharing and progress all reuse the existing session flow.
+
+### Modelling
+
+- Pack sessions use a hidden `Topic.STUDY_PACK` (never listed in the topic catalog / pickers)
+  plus a nullable `packId` on the session. This keeps every existing `topic` NOT NULL column,
+  group-by and DTO working; UIs show the pack title wherever a topic label would appear.
+- All LLM work for pack sessions (bank generation, grading CONCEPTUAL answers, report narrative)
+  uses the **server Groq key** and is charged to the same monthly `chatTokensPerMonth` quota as
+  chat. The `X-LLM-*` headers are ignored for pack sessions.
+- Quota is checked when generating a bank and when **starting** a pack session. Once a session has
+  started it always finishes: tokens used during it are recorded even if that crosses the limit.
+
+### Question bank
+
+- Generated on demand (not on upload), asynchronously, from chunks spread across the whole pack.
+- Target size 24 questions: ~half MCQ (exactly 4 options, one correct, with explanation) and
+  ~half CONCEPTUAL (with a reference answer used for grading), mixed EASY / MEDIUM / HARD.
+- Each question records its source (`page`, `section`) so feedback can point back to the document.
+- Regenerating replaces the bank. Deleting the pack deletes the bank.
+
+`PackDto` gains:
+
+```json
+{ "quizStatus": "NONE" | "GENERATING" | "READY" | "FAILED", "quizQuestionCount": 24,
+  "quizErrorMessage": null }
+```
+
+A bank left `GENERATING` by a backend restart is marked `FAILED` at startup ("interrupted").
+
+### REST
+
+| Method | Path | Body / notes | Response |
+|---|---|---|---|
+| POST | `/api/packs/{id}/quiz/generate` | owner only; pack must be READY | 202 `PackDto` (quizStatus GENERATING) |
+| POST | `/api/sessions` | existing endpoint; new variant `{ "packId": 42, "startingDifficulty": "MEDIUM", "questionCount": 8 }` — `topic`/`topics` omitted | existing `SessionStartResponse` |
+
+Generate errors: `PACK_NOT_READY` (409), `QUIZ_ALREADY_GENERATING` (409), `CHAT_QUOTA_EXCEEDED` (429),
+`CHAT_UNAVAILABLE` (503). Pack-session start errors: exactly one of `topic` / `packId` (400),
+`PACK_NOT_READY` (409), `QUIZ_NOT_READY` (409), `CHAT_QUOTA_EXCEEDED` (429), `CHAT_UNAVAILABLE` (503),
+not found / not owner (404).
+
+Answering / completing a pack session (`POST /api/sessions/{id}/answers`, `/complete`): if the
+server-key LLM call fails (after one short retry of a rate limit), the request is refused with
+`LLM_RATE_LIMITED` (503) or `LLM_ERROR` (502) and nothing is saved — the client can simply submit
+again. (BYO-key topic sessions keep their existing error shapes.)
+
+`questionCount` (default 8, 2–20) is split into CONCEPTUAL = ceil(n/2) then MCQ = floor(n/2),
+capped by what the bank has; questions are picked by closest difficulty to the session's current
+difficulty and never repeat within a session.
+
+### DTO additions (nullable, only set for pack sessions)
+
+- `QuestionResponse`, `SessionResumeResponse`, `ReportResponse`, `SessionSummaryResponse`,
+  `ScorePoint`: `packId`, `packTitle`.
+- `topic` is `"STUDY_PACK"` on those; clients display `packTitle` instead of the topic label.
+- Deleting a pack keeps its quiz sessions and reports (`topic` stays `"STUDY_PACK"`), but their
+  `packId` / `packTitle` become `null` — clients need a fallback label (e.g. "Study pack").
+- The public shared report (`GET /api/public/reports/{token}`) of a pack session carries
+  `packTitle` only; `packId` is always `null` there.
+- Report "practice again" for a pack session links to the pack's quiz page, not a topic.
+
+### Frontend
+
+- READY pack: **Quiz** button → `/packs/:packId/quiz`: bank status; "Generate questions" (notes it
+  uses the monthly token budget) → poll until READY/FAILED; then difficulty, question count and
+  timed-mode options → start → the existing interview page.
+- Everywhere a topic label is shown, prefer `packTitle` when present; `topicLabel` must never
+  crash on an unknown/null topic.

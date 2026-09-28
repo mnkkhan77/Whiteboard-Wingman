@@ -66,12 +66,32 @@ public class Question {
     @OrderColumn(name = "case_index")
     private List<TestCase> testCases = new ArrayList<>();
 
+    /** Pack quiz CONCEPTUAL only: the bank's model answer, given to the grader. Server-side only. */
+    @Column(columnDefinition = "text")
+    private String referenceAnswer;
+
+    /** Pack quiz only: where in the document the question comes from (feedback points back here). */
+    private Integer sourcePage;
+
+    @Column(length = 500)
+    private String sourceSection;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    /** "page 3, Chapter 2 > Transactions" for a pack question, null for a handbook question. */
+    public String sourceReference() {
+        String page = sourcePage != null ? "page " + sourcePage : null;
+        String section = sourceSection != null && !sourceSection.isBlank() ? sourceSection : null;
+        if (page == null && section == null) {
+            return null;
+        }
+        return page == null ? section : section == null ? page : page + ", " + section;
     }
 
     @Embeddable

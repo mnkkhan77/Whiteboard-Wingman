@@ -14,13 +14,16 @@ public record SessionSummaryResponse(
         int targetQuestionCount,
         LocalDateTime createdAt,
         LocalDateTime completedAt,
-        Integer overallScore
+        Integer overallScore,
+        Long packId,
+        String packTitle
 ) {
-    public static SessionSummaryResponse from(InterviewSession s, Integer overallScore) {
+    public static SessionSummaryResponse from(InterviewSession s, Integer overallScore, PackRef pack) {
         return new SessionSummaryResponse(
                 s.getId(), s.getTopic(), s.getStatus(),
                 s.getQuestionsAsked(), s.getTargetQuestionCount(),
-                s.getCreatedAt(), s.getCompletedAt(), overallScore
+                s.getCreatedAt(), s.getCompletedAt(), overallScore,
+                pack.packId(), pack.packTitle()
         );
     }
 }

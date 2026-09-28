@@ -24,6 +24,13 @@ public class InterviewSession {
     @Column(nullable = false)
     private Topic topic;
 
+    /** The study pack a quiz session (topic STUDY_PACK) draws its questions from; null for every
+     *  handbook-topic session. A plain column, not an association: only the pack's title is ever
+     *  shown, and PackTitleLookup fetches those in one query per list. Becomes null if the pack is
+     *  deleted (V20, ON DELETE SET NULL) — the session itself and its report stay. */
+    @Column(name = "pack_id")
+    private Long packId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Difficulty startingDifficulty;
@@ -72,5 +79,11 @@ public class InterviewSession {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    /** Keyed on the topic rather than packId, so a quiz whose pack was deleted (packId set to
+     *  null) is still treated as one — its questions, grading and report stay the pack kind. */
+    public boolean isPackSession() {
+        return topic == Topic.STUDY_PACK;
     }
 }

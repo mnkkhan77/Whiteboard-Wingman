@@ -7,9 +7,10 @@ import com.mockinterview.backend.dto.TopicBreakdown;
 import com.mockinterview.backend.entity.*;
 import com.mockinterview.backend.repository.EvaluationRepository;
 import com.mockinterview.backend.repository.ReportRepository;
+import com.mockinterview.backend.repository.StudyPackRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
@@ -35,9 +36,21 @@ class ReportServiceTest {
     @Mock private ChatClient chatClient;
     @Mock private ChatClient.ChatClientRequestSpec requestSpec;
     @Mock private ChatClient.CallResponseSpec callResponseSpec;
+    // Phase 4 collaborators: pack-only paths, never reached by these handbook-topic tests.
+    @Mock private ServerChatClientProvider serverChatClientProvider;
+    @Mock private MeteredLlmCall meteredLlmCall;
+    @Mock private StudyPackRepository studyPackRepository;
 
-    @InjectMocks
     private ReportService reportService;
+
+    /** Real LLM resolver around the mocked chatClientFactory, so narrative stubs work as before. */
+    @BeforeEach
+    void setUp() {
+        reportService = new ReportService(sessionService, evaluationRepository, reportRepository,
+                new SessionLlmResolver(chatClientFactory, serverChatClientProvider, meteredLlmCall,
+                        new com.mockinterview.backend.config.QuizProperties(null, null, null, null, null, null, null, null, null, null, null)),
+                new PackTitleLookup(studyPackRepository));
+    }
 
     private User user;
 

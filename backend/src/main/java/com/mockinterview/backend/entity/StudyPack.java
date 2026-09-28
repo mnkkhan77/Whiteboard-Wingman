@@ -72,6 +72,20 @@ public class StudyPack {
     @Column(length = 2000)
     private String errorMessage;
 
+    /** The question bank (Phase 4, PackQuizQuestion). Like status, only changed through
+     *  StudyPackRepository's conditional updates once the pack exists. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private QuizStatus quizStatus = QuizStatus.NONE;
+
+    /** Rows currently in the bank — kept when a regeneration fails, since the old bank stays. */
+    @Column(nullable = false)
+    private int quizQuestionCount = 0;
+
+    /** Safe, user-facing reason for quizStatus FAILED; never exception text. */
+    @Column(length = 500)
+    private String quizErrorMessage;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

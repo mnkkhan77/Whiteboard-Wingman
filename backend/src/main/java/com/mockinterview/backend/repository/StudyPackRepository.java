@@ -1,5 +1,6 @@
 package com.mockinterview.backend.repository;
 
+import com.mockinterview.backend.entity.QuizStatus;
 import com.mockinterview.backend.entity.StudyPack;
 import com.mockinterview.backend.entity.StudyPackStatus;
 import com.mockinterview.backend.entity.User;
@@ -73,4 +74,59 @@ public interface StudyPackRepository extends JpaRepository<StudyPack, Long> {
                    @Param("errorCode") String errorCode,
                    @Param("errorMessage") String errorMessage,
                    @Param("now") LocalDateTime now);
+
+    /** Id + title only — all a session list, report or progress chart shows of a pack. */
+    record PackTitle(Long id, String title) {
+    }
+
+    @Query("select new com.mockinterview.backend.repository.StudyPackRepository$PackTitle(p.id, p.title) "
+            + "from StudyPack p where p.id in :ids")
+    List<PackTitle> findTitlesByIdIn(@Param("ids") Collection<Long> ids);
+
+    // ---- Question bank (docs/study-packs-contract.md "Quiz from a pack"). Same conditional-update
+    // style as the pipeline transitions above: "0 rows" is the race-free "not allowed / someone
+    // else got there first / pack deleted" signal.
+
+    /** Enters GENERATING only from a READY pack whose bank isn't already generating — the one
+     *  gate that makes two simultaneous generate requests start exactly one job. */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.quizStatus = com.mockinterview.backend.entity.QuizStatus.GENERATING,
+                   p.quizErrorMessage = null, p.updatedAt = :now
+            where p.id = :id and p.status = com.mockinterview.backend.entity.StudyPackStatus.READY
+              and p.quizStatus <> com.mockinterview.backend.entity.QuizStatus.GENERATING
+            """)
+    int startQuizGeneration(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    /** Joins PackQuizBankWriter's transaction, where it also row-locks the pack before the bank
+     *  rows are swapped, so a concurrent pack DELETE waits instead of racing the inserts. */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.quizStatus = com.mockinterview.backend.entity.QuizStatus.READY,
+                   p.quizQuestionCount = :count, p.quizErrorMessage = null, p.updatedAt = :now
+            where p.id = :id and p.quizStatus = com.mockinterview.backend.entity.QuizStatus.GENERATING
+            """)
+    int finishQuizGeneration(@Param("id") Long id, @Param("count") int count, @Param("now") LocalDateTime now);
+
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.quizStatus = com.mockinterview.backend.entity.QuizStatus.FAILED,
+                   p.quizErrorMessage = :message, p.updatedAt = :now
+            where p.id = :id and p.quizStatus = com.mockinterview.backend.entity.QuizStatus.GENERATING
+            """)
+    int failQuizGeneration(@Param("id") Long id, @Param("message") String message, @Param("now") LocalDateTime now);
+
+    /** Startup only: a job can't survive a restart (it lives on an in-memory executor). */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.quizStatus = com.mockinterview.backend.entity.QuizStatus.FAILED,
+                   p.quizErrorMessage = :message, p.updatedAt = :now
+            where p.quizStatus = :generating
+            """)
+    int failAllQuizGenerations(@Param("generating") QuizStatus generating, @Param("message") String message,
+                               @Param("now") LocalDateTime now);
 }
