@@ -20,12 +20,19 @@ export interface AuthResponse {
   guest: boolean;
 }
 
+/** Nullable pack fields on session-shaped DTOs — set only on study-pack quiz sessions, whose `topic`
+ *  is then the hidden "STUDY_PACK" (see utils/topics.ts: show `packTitle` instead of a topic label). */
+export interface PackSessionFields {
+  packId?: number | null;
+  packTitle?: string | null;
+}
+
 export interface TestCase {
   input: string;
   expectedOutput: string;
 }
 
-export interface QuestionResponse {
+export interface QuestionResponse extends PackSessionFields {
   id: number;
   sequenceNumber: number;
   topic: Topic;
@@ -68,7 +75,7 @@ export interface AnswerSubmitResponse {
   nextTopic: Topic | null;
 }
 
-export interface SessionResumeResponse {
+export interface SessionResumeResponse extends PackSessionFields {
   status: SessionStatus;
   progress: ProgressResponse;
   currentQuestion: QuestionResponse | null;
@@ -90,7 +97,7 @@ export interface CodeRunResponse {
   compileError: string | null;
 }
 
-export interface SessionSummaryResponse {
+export interface SessionSummaryResponse extends PackSessionFields {
   id: number;
   topic: Topic;
   status: SessionStatus;
@@ -118,7 +125,7 @@ export interface TopicBreakdown {
   questionCount: number;
 }
 
-export interface ReportResponse {
+export interface ReportResponse extends PackSessionFields {
   sessionId: number;
   topic: Topic;
   overallScore: number;
@@ -209,7 +216,7 @@ export interface TopicRecommendationResponse {
   rationale: string;
 }
 
-export interface ScorePoint {
+export interface ScorePoint extends PackSessionFields {
   sessionId: number;
   topic: Topic;
   completedAt: string;
@@ -227,6 +234,9 @@ export interface PersonalProgressResponse {
 // --- Study packs (docs/study-packs-contract.md) ---
 
 export type PackStatus = "QUEUED" | "EMBEDDING" | "READY" | "FAILED";
+
+/** State of a pack's LLM-generated question bank (Phase 4). */
+export type QuizStatus = "NONE" | "GENERATING" | "READY" | "FAILED";
 
 /** Set on a FAILED pack — doc-processor codes plus CHUNK_LIMIT_EXCEEDED / EMBEDDING_FAILED (backend). */
 export type PackErrorCode =
@@ -251,6 +261,10 @@ export interface PackDto {
   ocrUsed: boolean | null;
   errorCode: PackErrorCode | null;
   errorMessage: string | null;
+  quizStatus: QuizStatus;
+  /** Questions in the bank (0 / null until one has been generated). */
+  quizQuestionCount: number | null;
+  quizErrorMessage: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -342,3 +356,13 @@ export type ChatErrorCode =
   | "CHAT_UNAVAILABLE"
   | "LLM_RATE_LIMITED"
   | "LLM_ERROR";
+
+// --- Quiz from a pack (Phase 4) ---
+
+/** Every `code` the quiz endpoints (bank generation + pack-session start) can produce. */
+export type QuizErrorCode =
+  | "PACK_NOT_READY"
+  | "QUIZ_NOT_READY"
+  | "QUIZ_ALREADY_GENERATING"
+  | "CHAT_QUOTA_EXCEEDED"
+  | "CHAT_UNAVAILABLE";

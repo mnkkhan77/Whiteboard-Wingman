@@ -10,19 +10,11 @@ import { CodeEditorPane } from "../components/CodeEditorPane";
 import { MicButton } from "../components/MicButton";
 import { RunCodePanel } from "../components/RunCodePanel";
 import { useTopicCatalog } from "../hooks/useTopicCatalog";
+import { isPackSession } from "../utils/topics";
+import type { InterviewLaunchState } from "../utils/interview";
 import type { EvaluationResult, ProgressResponse, QuestionResponse, QuestionType, Topic } from "../types/api";
 
 type Phase = "AWAITING_ANSWER" | "SUBMITTING" | "SHOWING_FEEDBACK" | "FINISHING";
-
-interface LocationState {
-  firstQuestion: QuestionResponse;
-  targetQuestionCount: number;
-  timedMode?: boolean;
-  // The ordered topic loop as chosen on the start page — only available on a fresh navigation
-  // (lost on a page refresh, same as the rest of location.state), used purely to show "Topic X of
-  // Y"; the loop itself advances correctly either way since that's driven by the backend.
-  topics?: Topic[];
-}
 
 const QUESTION_TYPE_LABEL: Record<QuestionType, string> = {
   CONCEPTUAL: "Verbal",
@@ -31,6 +23,8 @@ const QUESTION_TYPE_LABEL: Record<QuestionType, string> = {
 };
 
 const ROUND_ORDER: QuestionType[] = ["CONCEPTUAL", "MCQ", "CODING"];
+// A study-pack quiz only draws verbal + multiple-choice questions from the pack's bank.
+const PACK_ROUND_ORDER: QuestionType[] = ["CONCEPTUAL", "MCQ"];
 
 // Per-question-type countdown budgets for timed mode, in seconds. Named constants so the pacing
 // is easy to tweak without hunting through JSX.
@@ -65,9 +59,9 @@ export default function InterviewPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
   const { apiKey, provider, model } = useApiKey();
-  const { label: topicLabel } = useTopicCatalog(token);
+  const { label: topicLabel, sessionLabel } = useTopicCatalog(token);
 
-  const locationState = location.state as LocationState | null;
+  const locationState = location.state as InterviewLaunchState | null;
   const numericSessionId = sessionId ? Number(sessionId) : NaN;
   // Defaults to false for both an older link (no timedMode in state) and a mid-interview refresh
   // (React Router's in-memory location.state doesn't survive a reload).
@@ -209,6 +203,8 @@ export default function InterviewPage() {
     );
   }
 
+  const packSession = isPackSession(question);
+
   async function submitCurrentAnswer() {
     if (!token || Number.isNaN(numericSessionId)) return;
     hasSubmittedRef.current = true;
@@ -312,12 +308,17 @@ export default function InterviewPage() {
 
         {topics && topics.length > 1 && (
           <p className="topic-progress-label">
-            Topic {currentTopicIndex + 1} of {topics.length}: {topicLabel(question.topic)}
+            Topic {currentTopicIndex + 1} of {topics.length}: {sessionLabel(question)}
+          </p>
+        )}
+        {packSession && (
+          <p className="topic-progress-label">
+            <span aria-hidden>📚</span> Quiz: {sessionLabel(question)}
           </p>
         )}
 
         <div className="round-stepper">
-          {ROUND_ORDER.map((type, i) => {
+          {(packSession ? PACK_ROUND_ORDER : ROUND_ORDER).map((type, i) => {
             const status = completedRounds.has(type)
               ? "completed"
               : type === question.questionType
@@ -486,7 +487,7 @@ export default function InterviewPage() {
                 <div className="section-break">
                   {nextTopic ? (
                     <>
-                      <p className="section-break-title">🎉 {topicLabel(question.topic)} complete!</p>
+                      <p className="section-break-title">🎉 {sessionLabel(question)} complete!</p>
                       <p className="hint">
                         Next up
                         {topics && topics.length > 1 ? ` — topic ${currentTopicIndex + 2} of ${topics.length}` : ""}:{" "}

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { deletePack, getPackLimits, listPacks, uploadPack } from "../api/packs";
 import { ApiError } from "../api/client";
+import { usePolling } from "./usePolling";
 import { hasPacksInFlight } from "../utils/packs";
 import type { PackDto, PackLimitsDto } from "../types/api";
-
-const POLL_INTERVAL_MS = 3000;
 
 /**
  * Loads the current user's study packs + tier limits, polls the list while any pack is still
@@ -37,33 +36,13 @@ export function useStudyPacks(token: string | null) {
     };
   }, [token, reloadKey]);
 
-  // Poll only while something is still processing. A setTimeout chain (next poll scheduled after
-  // the previous one settles) means a slow server never gets overlapping requests; the effect
-  // tears down as soon as nothing is in flight, and on unmount.
-  const inFlight = hasPacksInFlight(packs);
-  useEffect(() => {
-    if (!token || !inFlight) return;
-    let cancelled = false;
-    let timer = 0;
-    const poll = () => {
-      const version = mutationRef.current;
-      listPacks(token)
-        .then((next) => {
-          if (!cancelled && version === mutationRef.current) setPacks(next);
-        })
-        .catch(() => {
-          // transient failure — try again on the next tick
-        })
-        .finally(() => {
-          if (!cancelled) timer = window.setTimeout(poll, POLL_INTERVAL_MS);
-        });
-    };
-    timer = window.setTimeout(poll, POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [token, inFlight]);
+  // Poll only while something is still processing (the chain stops as soon as nothing is in flight).
+  usePolling(!!token && hasPacksInFlight(packs), async (signal) => {
+    if (!token) return;
+    const version = mutationRef.current;
+    const next = await listPacks(token, signal);
+    if (!signal.aborted && version === mutationRef.current) setPacks(next);
+  });
 
   // The backend's packsUsed is a count of every pack the user owns — the same set GET /packs
   // returns — so derive it from the list instead of re-fetching limits after each upload/delete.

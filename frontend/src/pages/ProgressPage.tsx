@@ -20,7 +20,7 @@ export default function ProgressPage() {
   const { token } = useAuth();
   const [progress, setProgress] = useState<PersonalProgressResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { label: topicLabel } = useTopicCatalog(token);
+  const { label: topicLabel, sessionLabel } = useTopicCatalog(token);
 
   useEffect(() => {
     if (!token) return;
@@ -113,7 +113,7 @@ export default function ProgressPage() {
                     <div
                       key={sp.sessionId}
                       className="score-trend-bar-wrap"
-                      title={`${topicLabel(sp.topic)} — ${new Date(sp.completedAt).toLocaleDateString()} — ${sp.overallScore}/100`}
+                      title={`${sessionLabel(sp)} — ${new Date(sp.completedAt).toLocaleDateString()} — ${sp.overallScore}/100`}
                     >
                       <span className="score-trend-bar-value">{sp.overallScore}</span>
                       <div

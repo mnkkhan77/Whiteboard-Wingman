@@ -21,22 +21,41 @@ export interface LlmCreds {
   llmModel?: string;
 }
 
-/** topics is the ordered "loop" list (1+ entries) — topics[0] also goes in the body's `topic`
- *  field since the backend keeps that required for backward compatibility with single-topic
- *  starts; the rest queue up behind it. */
-export function startSession(
-  creds: LlmCreds,
-  topics: Topic[],
-  startingDifficulty: Difficulty,
-  questionCount: number
-) {
+/** What a session is built from: an ordered topic "loop", or one study pack's question bank. */
+export type SessionSource =
+  | {
+      kind: "topics";
+      /** The ordered "loop" list (1+ entries) — topics[0] also goes in the body's `topic` field since
+       *  the backend keeps that required for backward compatibility with single-topic starts; the
+       *  rest queue up behind it. */
+      topics: Topic[];
+      creds: LlmCreds;
+    }
+  | {
+      kind: "pack";
+      packId: number;
+      /** Pack sessions always run on the server's LLM key (charged to the monthly token budget), so
+       *  no BYO-LLM headers are sent. */
+      token: string;
+    };
+
+export function startSession(source: SessionSource, startingDifficulty: Difficulty, questionCount: number) {
+  const common = { startingDifficulty, questionCount };
+  if (source.kind === "pack") {
+    return apiFetch<SessionStartResponse>("/sessions", {
+      method: "POST",
+      token: source.token,
+      body: { packId: source.packId, ...common },
+    });
+  }
+  const { creds, topics } = source;
   return apiFetch<SessionStartResponse>("/sessions", {
     method: "POST",
     token: creds.token,
     llmKey: creds.llmKey,
     llmProvider: creds.llmProvider,
     llmModel: creds.llmModel,
-    body: { topic: topics[0], startingDifficulty, questionCount, topics },
+    body: { topic: topics[0], ...common, topics },
   });
 }
 

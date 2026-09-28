@@ -9,15 +9,13 @@ import { recommendTopic } from "../api/topics";
 import { ApiError } from "../api/client";
 import { useTopicCatalog } from "../hooks/useTopicCatalog";
 import { CATEGORY_META } from "../constants/topicCategories";
+import { DifficultyPicker } from "../components/DifficultyPicker";
+import { QuestionCountInput } from "../components/QuestionCountInput";
+import { TimedModeCheckbox } from "../components/TimedModeCheckbox";
+import { interviewLaunch } from "../utils/interview";
 import type { Category, Difficulty, Topic, TopicRecommendationResponse } from "../types/api";
 
 const CATEGORIES: Category[] = ["JAVA_BACKEND", "REACT_FRONTEND", "AI_ENGINEERING"];
-
-const DIFFICULTIES: { value: Difficulty; label: string }[] = [
-  { value: "EASY", label: "Easy" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HARD", label: "Hard" },
-];
 
 const MODEL_PRESETS: Record<"GROQ" | "OPENAI", { value: string; label: string }[]> = {
   GROQ: [
@@ -147,10 +145,9 @@ export default function SessionStartPage() {
     setGuestLimitReached(false);
     setLoading(true);
     try {
-      const res = await startSession({ token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined }, topics, difficulty, questionCount);
-      navigate(`/interview/${res.sessionId}`, {
-        state: { firstQuestion: res.firstQuestion, targetQuestionCount: questionCount, timedMode, topics },
-      });
+      const creds = { token, llmKey: apiKey, llmProvider: provider, llmModel: model || undefined };
+      const res = await startSession({ kind: "topics", topics, creds }, difficulty, questionCount);
+      navigate(...interviewLaunch(res, { targetQuestionCount: questionCount, timedMode, topics }));
     } catch (err) {
       if (err instanceof ApiError && err.code === "GUEST_LIMIT_REACHED") {
         setGuestLimitReached(true);
@@ -279,44 +276,17 @@ export default function SessionStartPage() {
 
           <section className="card">
             <h2>2. Set the pace</h2>
-            <label>
-              Starting difficulty
-              <div className="difficulty-picker">
-                {DIFFICULTIES.map((d) => (
-                  <button
-                    type="button"
-                    key={d.value}
-                    className={
-                      difficulty === d.value
-                        ? `difficulty-option difficulty-option-${d.value.toLowerCase()} selected`
-                        : `difficulty-option difficulty-option-${d.value.toLowerCase()}`
-                    }
-                    onClick={() => setDifficulty(d.value)}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </label>
+            <DifficultyPicker value={difficulty} onChange={setDifficulty} />
 
-            <label>
-              Number of verbal questions
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={questionCount}
-                onChange={(e) => {
-                  const parsed = Number(e.target.value);
-                  setQuestionCount(Number.isNaN(parsed) ? 1 : Math.min(20, Math.max(1, parsed)));
-                }}
-              />
-            </label>
+            <QuestionCountInput
+              label="Number of verbal questions"
+              value={questionCount}
+              onChange={setQuestionCount}
+              min={1}
+              max={20}
+            />
 
-            <label className="checkbox-label">
-              <input type="checkbox" checked={timedMode} onChange={(e) => setTimedMode(e.target.checked)} />
-              ⏱ Timed mode <span className="hint">(add a per-question countdown for realistic interview pressure)</span>
-            </label>
+            <TimedModeCheckbox checked={timedMode} onChange={setTimedMode} />
           </section>
 
           <section className="card">

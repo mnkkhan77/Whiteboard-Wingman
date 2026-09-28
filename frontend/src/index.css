@@ -1301,6 +1301,10 @@ button.secondary:hover,
   background: var(--bg-accent);
 }
 
+.topic-icon-pack {
+  background: rgba(22, 163, 74, 0.14);
+}
+
 .session-meta {
   display: flex;
   gap: 14px;
@@ -2785,4 +2789,25 @@ button.chat-example {
   .breakdown-item summary::-webkit-details-marker {
     display: none;
   }
+}
+
+/* --- Pack quiz --- */
+
+.quiz-bank-card h2 {
+  margin: 0;
+}
+
+.quiz-bank-card .hint {
+  margin: 0;
+}
+
+.quiz-bank-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.quiz-bank-actions .error-text {
+  margin: 0;
 }

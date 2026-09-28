@@ -6,8 +6,8 @@ export function getPackLimits(token: string) {
 }
 
 /** Current user's packs, newest first. */
-export function listPacks(token: string) {
-  return apiFetch<PackDto[]>("/packs", { token });
+export function listPacks(token: string, signal?: AbortSignal) {
+  return apiFetch<PackDto[]>("/packs", { token, signal });
 }
 
 /** Owner only — 404 for someone else's pack. */
@@ -27,4 +27,10 @@ export function uploadPack(token: string, file: File, title?: string, onProgress
 /** Deletes the pack's file, chunks and vectors. */
 export function deletePack(token: string, packId: number) {
   return apiFetch<void>(`/packs/${packId}`, { method: "DELETE", token });
+}
+
+/** Starts (or restarts — the new bank replaces the old one) async question-bank generation.
+ *  Resolves with the pack in quizStatus GENERATING (202); poll getPack until READY / FAILED. */
+export function generateQuiz(token: string, packId: number) {
+  return apiFetch<PackDto>(`/packs/${packId}/quiz/generate`, { method: "POST", token });
 }

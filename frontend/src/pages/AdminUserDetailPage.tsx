@@ -15,7 +15,7 @@ export default function AdminUserDetailPage() {
   const { token } = useAuth();
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { label: topicLabel } = useTopicCatalog(token);
+  const { sessionLabel } = useTopicCatalog(token);
   const [tierSaving, setTierSaving] = useState(false);
   const [tierError, setTierError] = useState<string | null>(null);
   const [tierSaved, setTierSaved] = useState(false);
@@ -132,7 +132,7 @@ export default function AdminUserDetailPage() {
         <tbody>
           {detail.sessions.map((s) => (
             <tr key={s.id}>
-              <td>{topicLabel(s.topic)}</td>
+              <td>{sessionLabel(s)}</td>
               <td>
                 <span className={`status-badge status-${s.status.toLowerCase()}`}>{s.status}</span>
               </td>

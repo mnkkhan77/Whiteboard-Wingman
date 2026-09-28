@@ -5,7 +5,6 @@ import { ReportView } from "../components/ReportView";
 import { getPublicReport } from "../api/sessions";
 import { ApiError } from "../api/client";
 import { useTopicCatalog } from "../hooks/useTopicCatalog";
-import { CATEGORY_META } from "../constants/topicCategories";
 import type { ReportResponse } from "../types/api";
 
 /** Unauthenticated view of a report reached via its public share link (see ReportPage's "Share
@@ -15,7 +14,7 @@ export default function PublicReportPage() {
   const { token: shareToken } = useParams<{ token: string }>();
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { byTopic, label: topicLabel } = useTopicCatalog(null);
+  const { labelerFor, iconFor } = useTopicCatalog(null);
 
   useEffect(() => {
     if (!shareToken) return;
@@ -53,8 +52,7 @@ export default function PublicReportPage() {
     );
   }
 
-  const category = byTopic[report.topic]?.category;
-  const categoryMeta = category ? CATEGORY_META[category] : null;
+  const icon = iconFor(report);
 
   return (
     <>
@@ -67,9 +65,9 @@ export default function PublicReportPage() {
       <div className="page">
         <ReportView
           report={report}
-          topicLabel={topicLabel}
-          categoryIcon={categoryMeta?.icon}
-          categoryClass={category?.toLowerCase()}
+          topicLabel={labelerFor(report)}
+          categoryIcon={icon.icon}
+          categoryClass={icon.className}
         />
 
         <div className="report-actions">

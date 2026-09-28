@@ -15,6 +15,7 @@ import ReportPage from "./pages/ReportPage";
 import PublicReportPage from "./pages/PublicReportPage";
 import PacksPage from "./pages/PacksPage";
 import PackChatPage from "./pages/PackChatPage";
+import PackQuizPage from "./pages/PackQuizPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminUserDetailPage from "./pages/AdminUserDetailPage";
 
@@ -54,6 +55,7 @@ export default function App() {
                 <Route path="/sessions/:sessionId/report" element={<ReportPage />} />
                 <Route path="/packs" element={<PacksPage />} />
                 <Route path="/packs/:packId/chat" element={<PackChatPage />} />
+                <Route path="/packs/:packId/quiz" element={<PackQuizPage />} />
 
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminDashboardPage />} />

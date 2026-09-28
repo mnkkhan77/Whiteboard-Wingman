@@ -6,7 +6,6 @@ import type { PackDto, PackLimitsDto } from "../types/api";
 
 // Next-phase features, shown disabled on READY packs so the roadmap is visible.
 const COMING_SOON_ACTIONS = [
-  { label: "Quiz", icon: "📝" },
   { label: "Flashcards", icon: "🗂️" },
   { label: "Course", icon: "🎓" },
 ];
@@ -109,6 +108,13 @@ export function PackListItem({ pack, limits, onDelete }: PackListItemProps) {
             aria-label={`Chat with ${pack.title}`}
           >
             <span aria-hidden>💬</span> Chat
+          </Link>
+          <Link
+            to={`/packs/${pack.id}/quiz`}
+            className="button secondary pack-small-button"
+            aria-label={`Quiz yourself on ${pack.title}`}
+          >
+            <span aria-hidden>📝</span> Quiz
           </Link>
           {COMING_SOON_ACTIONS.map((a) => (
             <button

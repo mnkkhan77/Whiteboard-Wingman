@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { Correctness, Difficulty, ReportResponse } from "../types/api";
+import type { Correctness, Difficulty, ReportResponse, Topic } from "../types/api";
 
 const DIFFICULTY_LABELS: Difficulty[] = ["EASY", "MEDIUM", "HARD"];
 
@@ -22,7 +22,8 @@ const CORRECTNESS_LABEL: Record<Correctness, string> = {
 
 interface ReportViewProps {
   report: ReportResponse;
-  topicLabel: (topic: string) => string;
+  /** Pass useTopicCatalog's `labelerFor(report)` so a pack quiz's STUDY_PACK topic shows the pack title. */
+  topicLabel: (topic: Topic | null | undefined) => string;
   categoryIcon?: string;
   categoryClass?: string;
 }

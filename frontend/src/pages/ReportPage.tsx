@@ -7,7 +7,7 @@ import { ReportView } from "../components/ReportView";
 import { getReport, shareReport } from "../api/sessions";
 import { ApiError } from "../api/client";
 import { useTopicCatalog } from "../hooks/useTopicCatalog";
-import { CATEGORY_META } from "../constants/topicCategories";
+import { isPackSession } from "../utils/topics";
 import type { ReportResponse } from "../types/api";
 
 export default function ReportPage() {
@@ -16,7 +16,7 @@ export default function ReportPage() {
   const navigate = useNavigate();
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { byTopic, label: topicLabel } = useTopicCatalog(token);
+  const { labelerFor, iconFor } = useTopicCatalog(token);
 
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
@@ -86,8 +86,7 @@ export default function ReportPage() {
     );
   }
 
-  const category = byTopic[report.topic]?.category;
-  const categoryMeta = category ? CATEGORY_META[category] : null;
+  const icon = iconFor(report);
 
   return (
     <>
@@ -95,9 +94,9 @@ export default function ReportPage() {
       <div className="page">
         <ReportView
           report={report}
-          topicLabel={topicLabel}
-          categoryIcon={categoryMeta?.icon}
-          categoryClass={category?.toLowerCase()}
+          topicLabel={labelerFor(report)}
+          categoryIcon={icon.icon}
+          categoryClass={icon.className}
         />
 
         <div className="card report-share-section">
@@ -123,15 +122,23 @@ export default function ReportPage() {
         </div>
 
         <div className="report-actions">
-          {report.overallScore < 70 && (
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => navigate("/sessions/new", { state: { prefillTopic: report.topic } })}
-            >
-              Practice this topic again
-            </button>
-          )}
+          {report.overallScore < 70 &&
+            (isPackSession(report) ? (
+              // A pack quiz is practised again from its pack's quiz page, not the topic picker.
+              report.packId != null && (
+                <Link to={`/packs/${report.packId}/quiz`} className="button secondary">
+                  Practice this pack again
+                </Link>
+              )
+            ) : (
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => navigate("/sessions/new", { state: { prefillTopic: report.topic } })}
+              >
+                Practice this topic again
+              </button>
+            ))}
           <Link to="/sessions/new" className="button primary start-cta">
             Start Another Interview
           </Link>

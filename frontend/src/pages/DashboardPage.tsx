@@ -5,14 +5,13 @@ import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { listSessions } from "../api/sessions";
 import { useTopicCatalog } from "../hooks/useTopicCatalog";
-import { CATEGORY_META } from "../constants/topicCategories";
 import type { SessionSummaryResponse } from "../types/api";
 
 export default function DashboardPage() {
   const { token, displayName } = useAuth();
   const [sessions, setSessions] = useState<SessionSummaryResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { byTopic, label: topicLabel } = useTopicCatalog(token);
+  const { sessionLabel, iconFor } = useTopicCatalog(token);
 
   useEffect(() => {
     if (!token) return;
@@ -86,17 +85,16 @@ export default function DashboardPage() {
 
         <ul className="session-list">
           {sessions?.map((s) => {
-            const category = byTopic[s.topic]?.category;
-            const categoryMeta = category ? CATEGORY_META[category] : null;
+            const icon = iconFor(s);
             return (
               <li key={s.id} className="card session-row">
                 <div className="session-row-main">
-                  <span className={`topic-icon topic-icon-${category?.toLowerCase() ?? "default"}`} aria-hidden>
-                    {categoryMeta?.icon ?? "💡"}
+                  <span className={`topic-icon topic-icon-${icon.className}`} aria-hidden>
+                    {icon.icon}
                   </span>
                   <div className="session-row-info">
                     <div className="session-row-title">
-                      <strong>{topicLabel(s.topic)}</strong>
+                      <strong>{sessionLabel(s)}</strong>
                       <span className={`status-badge status-${s.status.toLowerCase()}`}>{s.status}</span>
                       {s.overallScore !== null && <span className="score-badge">{s.overallScore}/100</span>}
                     </div>

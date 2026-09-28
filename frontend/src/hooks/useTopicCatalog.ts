@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { listTopics } from "../api/topics";
-import type { Topic, TopicsByCategory, TopicSummary } from "../types/api";
+import {
+  sessionIcon,
+  sessionLabel,
+  sessionTopicLabeler,
+  topicLabel,
+  type SessionLike,
+  type TopicIndex,
+} from "../utils/topics";
+import type { Topic, TopicsByCategory } from "../types/api";
 
 // Module-level cache: the catalog (~160 topics) is the same for every user and rarely changes
 // within a session, so fetch it once and share it across every page that needs a topic label.
@@ -25,16 +33,25 @@ export function useTopicCatalog(token?: string | null) {
     });
   }, [token]);
 
-  const byTopic: Partial<Record<Topic, TopicSummary>> = {};
+  const byTopic: TopicIndex = {};
   if (data) {
     for (const entries of Object.values(data)) {
       for (const entry of entries ?? []) byTopic[entry.topic] = entry;
     }
   }
 
-  function label(topic: Topic): string {
-    return byTopic[topic]?.label ?? topic.replaceAll("_", " ");
-  }
-
-  return { data, byTopic, label };
+  // Display helpers bound to the loaded catalog — see utils/topics.ts for the fallbacks (they never
+  // throw on a null/unknown topic, and pack sessions show their pack title).
+  return {
+    data,
+    byTopic,
+    /** A bare topic code's label. */
+    label: (topic: Topic | null | undefined) => topicLabel(topic, byTopic),
+    /** A session's name: pack title for a pack quiz, else its topic label. */
+    sessionLabel: (session: SessionLike) => sessionLabel(session, byTopic),
+    /** Topic labeller for one session's breakdowns (its STUDY_PACK entries show the pack title). */
+    labelerFor: (session: SessionLike) => sessionTopicLabeler(session, byTopic),
+    /** Avatar icon + `topic-icon-*` modifier for a session. */
+    iconFor: (session: SessionLike) => sessionIcon(session, byTopic),
+  };
 }
