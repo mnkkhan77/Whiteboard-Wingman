@@ -1,5 +1,6 @@
 package com.mockinterview.backend.repository;
 
+import com.mockinterview.backend.entity.FlashcardStatus;
 import com.mockinterview.backend.entity.QuizStatus;
 import com.mockinterview.backend.entity.StudyPack;
 import com.mockinterview.backend.entity.StudyPackStatus;
@@ -129,4 +130,50 @@ public interface StudyPackRepository extends JpaRepository<StudyPack, Long> {
             """)
     int failAllQuizGenerations(@Param("generating") QuizStatus generating, @Param("message") String message,
                                @Param("now") LocalDateTime now);
+
+    // ---- Flashcard deck (docs/study-packs-contract.md "Flashcards from a pack"). Same
+    // conditional-update style as the question bank above.
+
+    /** Enters GENERATING only from a READY pack whose deck isn't already generating — the one
+     *  gate that makes two simultaneous generate requests start exactly one job. */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.flashcardStatus = com.mockinterview.backend.entity.FlashcardStatus.GENERATING,
+                   p.flashcardErrorMessage = null, p.updatedAt = :now
+            where p.id = :id and p.status = com.mockinterview.backend.entity.StudyPackStatus.READY
+              and p.flashcardStatus <> com.mockinterview.backend.entity.FlashcardStatus.GENERATING
+            """)
+    int startFlashcardGeneration(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    /** Joins PackFlashcardBankWriter's transaction, where it also row-locks the pack before the deck
+     *  rows are swapped, so a concurrent pack DELETE waits instead of racing the inserts. */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.flashcardStatus = com.mockinterview.backend.entity.FlashcardStatus.READY,
+                   p.flashcardCount = :count, p.flashcardErrorMessage = null, p.updatedAt = :now
+            where p.id = :id and p.flashcardStatus = com.mockinterview.backend.entity.FlashcardStatus.GENERATING
+            """)
+    int finishFlashcardGeneration(@Param("id") Long id, @Param("count") int count, @Param("now") LocalDateTime now);
+
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.flashcardStatus = com.mockinterview.backend.entity.FlashcardStatus.FAILED,
+                   p.flashcardErrorMessage = :message, p.updatedAt = :now
+            where p.id = :id and p.flashcardStatus = com.mockinterview.backend.entity.FlashcardStatus.GENERATING
+            """)
+    int failFlashcardGeneration(@Param("id") Long id, @Param("message") String message, @Param("now") LocalDateTime now);
+
+    /** Startup only: a job can't survive a restart (it lives on an in-memory executor). */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.flashcardStatus = com.mockinterview.backend.entity.FlashcardStatus.FAILED,
+                   p.flashcardErrorMessage = :message, p.updatedAt = :now
+            where p.flashcardStatus = :generating
+            """)
+    int failAllFlashcardGenerations(@Param("generating") FlashcardStatus generating, @Param("message") String message,
+                                    @Param("now") LocalDateTime now);
 }

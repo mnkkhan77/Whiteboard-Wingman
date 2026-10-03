@@ -3,11 +3,15 @@ package com.mockinterview.backend.controller;
 import com.mockinterview.backend.dto.ChatHistoryDto;
 import com.mockinterview.backend.dto.ChatRequest;
 import com.mockinterview.backend.dto.ChatStreamEvent;
+import com.mockinterview.backend.dto.FlashcardDeckDto;
+import com.mockinterview.backend.dto.FlashcardReviewRequest;
 import com.mockinterview.backend.dto.PackDto;
+import com.mockinterview.backend.dto.PackFlashcardDto;
 import com.mockinterview.backend.dto.PackLimitsDto;
 import com.mockinterview.backend.entity.User;
 import com.mockinterview.backend.repository.UserRepository;
 import com.mockinterview.backend.service.PackChatService;
+import com.mockinterview.backend.service.PackFlashcardService;
 import com.mockinterview.backend.service.PackQuizService;
 import com.mockinterview.backend.service.StudyPackService;
 import jakarta.validation.Valid;
@@ -33,6 +37,7 @@ public class StudyPackController {
     private final StudyPackService studyPackService;
     private final PackChatService packChatService;
     private final PackQuizService packQuizService;
+    private final PackFlashcardService packFlashcardService;
     private final UserRepository userRepository;
 
     // Literal path segment, resolved before the sibling "/{id}" mapping — no routing collision.
@@ -94,6 +99,24 @@ public class StudyPackController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public PackDto generateQuiz(@PathVariable Long id, Authentication auth) {
         return packQuizService.requestGeneration(resolveUser(auth), id);
+    }
+
+    /** 202: the deck is written in the background; poll GET /api/packs/{id} for flashcardStatus. */
+    @PostMapping("/{id}/flashcards/generate")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PackDto generateFlashcards(@PathVariable Long id, Authentication auth) {
+        return packFlashcardService.requestGeneration(resolveUser(auth), id);
+    }
+
+    @GetMapping("/{id}/flashcards")
+    public FlashcardDeckDto flashcards(@PathVariable Long id, Authentication auth) {
+        return packFlashcardService.deck(resolveUser(auth), id);
+    }
+
+    @PostMapping(value = "/{id}/flashcards/{cardId}/review", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public PackFlashcardDto reviewFlashcard(@PathVariable Long id, @PathVariable Long cardId,
+                                            @Valid @RequestBody FlashcardReviewRequest request, Authentication auth) {
+        return packFlashcardService.review(resolveUser(auth), id, cardId, request.quality());
     }
 
     private User resolveUser(Authentication auth) {

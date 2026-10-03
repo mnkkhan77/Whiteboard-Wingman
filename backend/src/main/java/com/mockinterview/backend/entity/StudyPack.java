@@ -86,6 +86,19 @@ public class StudyPack {
     @Column(length = 500)
     private String quizErrorMessage;
 
+    /** The flashcard deck (Phase 5, PackFlashcard). Same conditional-update discipline as quizStatus. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private FlashcardStatus flashcardStatus = FlashcardStatus.NONE;
+
+    /** Cards currently in the deck — kept when a regeneration fails, since the old deck stays. */
+    @Column(nullable = false)
+    private int flashcardCount = 0;
+
+    /** Safe, user-facing reason for flashcardStatus FAILED; never exception text. */
+    @Column(length = 500)
+    private String flashcardErrorMessage;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -190,3 +190,16 @@ app:
     # Grading / report narrative of a pack quiz: one short retry of a 429, a user request is waiting.
     session-rate-limit-retries: 1
     session-rate-limit-backoff: 5s
+
+  # Flashcard-deck generation for "flashcards from a pack" — see FlashcardProperties. 12 chunks
+  # spread across the document, 4 sequential LLM calls of 3 chunks / ~8 cards each, 30 cards total.
+  flashcards:
+    target-cards: 30
+    min-cards: 5
+    max-batches: 4
+    chunks-per-batch: 3
+    max-cards-per-batch: 10
+    rate-limit-retries: 2
+    rate-limit-backoff: 20s
+    generation-threads: 2
+    queue-capacity: 20
