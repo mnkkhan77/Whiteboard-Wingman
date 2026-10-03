@@ -190,7 +190,8 @@ class DocumentWorker:
         finally:
             self.busy = False
         topic = s.kafka_topic_parsed if isinstance(result, DocumentParsedEvent) else s.kafka_topic_failed
-        if self._publish_or_rewind(consumer, msg, topic, str(event.pack_id).encode(), result.to_json_bytes()):
+        if self._publish_or_rewind(consumer, msg, topic, str(event.pack_id).encode(), result.to_json_bytes(),
+                                    _trace_headers(msg)):
             self._commit(consumer, msg)
 
     def _publish_or_rewind(
@@ -265,6 +266,15 @@ class DocumentWorker:
             # e.g. UNKNOWN_TOPIC_OR_PART until the backend creates the topic: keep polling.
             log.warning("Consumer error: %s", err)
             self.last_error = str(err)
+
+
+def _trace_headers(msg: Any) -> Headers:
+    """Forwards the traceId header (if present) from the uploaded message onto the parsed/failed
+    result event, so the backend's logs for the original upload and the async outcome correlate
+    (docs/study-packs-contract.md "Kafka"). The poison-message/DLT path already forwards every
+    header (handle_message above); this is the same idea for the normal success/failure path,
+    which otherwise builds a fresh header list with nothing from the source message."""
+    return [(k, v) for k, v in (msg.headers() or []) if k == "traceId"]
 
 
 def decode_uploaded(value: bytes | None) -> tuple[DocumentUploadedEvent | None, str | None]:

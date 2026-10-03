@@ -2,11 +2,16 @@ package com.mockinterview.backend.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mockinterview.backend.config.CorrelationIdFilter;
 import com.mockinterview.backend.service.PackEmbeddingService;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Consumes the doc-processor's results (consumer group from spring.kafka.consumer.group-id,
@@ -32,16 +37,38 @@ public class DocumentEventsListener {
 
     @KafkaListener(topics = "${app.kafka.topics.parsed}")
     public void onParsed(ConsumerRecord<String, String> record) throws JsonProcessingException {
-        DocumentParsedEvent event = decode(record, DocumentParsedEvent.class);
-        requirePackId(event.packId(), record);
-        packEmbeddingService.handleParsed(event);
+        putTraceId(record);
+        try {
+            DocumentParsedEvent event = decode(record, DocumentParsedEvent.class);
+            requirePackId(event.packId(), record);
+            packEmbeddingService.handleParsed(event);
+        } finally {
+            MDC.remove(CorrelationIdFilter.MDC_KEY);
+        }
     }
 
     @KafkaListener(topics = "${app.kafka.topics.failed}")
     public void onFailed(ConsumerRecord<String, String> record) throws JsonProcessingException {
-        DocumentFailedEvent event = decode(record, DocumentFailedEvent.class);
-        requirePackId(event.packId(), record);
-        packEmbeddingService.handleFailed(event);
+        putTraceId(record);
+        try {
+            DocumentFailedEvent event = decode(record, DocumentFailedEvent.class);
+            requirePackId(event.packId(), record);
+            packEmbeddingService.handleFailed(event);
+        } finally {
+            MDC.remove(CorrelationIdFilter.MDC_KEY);
+        }
+    }
+
+    /** The doc-processor echoes the traceId header from wingman.document.uploaded back onto its
+     *  parsed/failed result (app/consumer.py's _trace_headers), so putting it in MDC here lets the
+     *  original upload request's logs and this async handling of it be grepped together — see
+     *  CorrelationIdFilter and OutboxPublisher, which set it on the way out. A missing header (no
+     *  trace, or an older doc-processor) just means nothing is grepped by, same as today. */
+    private static void putTraceId(ConsumerRecord<String, String> record) {
+        Header header = record.headers().lastHeader("traceId");
+        if (header != null) {
+            MDC.put(CorrelationIdFilter.MDC_KEY, new String(header.value(), StandardCharsets.UTF_8));
+        }
     }
 
     private <T> T decode(ConsumerRecord<String, String> record, Class<T> type) throws JsonProcessingException {

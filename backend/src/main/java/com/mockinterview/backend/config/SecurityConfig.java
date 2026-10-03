@@ -4,9 +4,11 @@ import com.mockinterview.backend.security.JwtAuthFilter;
 import com.mockinterview.backend.security.UserDetailsServiceImpl;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,7 +43,25 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins:http://localhost:5173}")
     private String allowedOriginsRaw;
 
+    /**
+     * Actuator endpoints (just health/info/prometheus — see application.yml's
+     * management.endpoints.web.exposure.include) are open, matched before the main chain below so
+     * they never hit its anyRequest().authenticated(). Accepted at this scale: this stack has no
+     * scrape-credential story and no separate management network boundary to put them behind
+     * instead (a real production deployment would want one, e.g. management.server.port).
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher(EndpointRequest.toAnyEndpoint())
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))

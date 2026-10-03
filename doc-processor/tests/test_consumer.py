@@ -98,6 +98,15 @@ def test_valid_upload_publishes_parsed_then_commits(worker_env, make_upload) -> 
     assert body["packId"] == 42 and body["chunksPath"] == "packs/42/chunks.json"
 
 
+def test_trace_id_header_is_forwarded_to_the_result_event_but_other_headers_are_not(worker_env, make_upload) -> None:
+    worker, consumer, log = worker_env
+    worker.handle_message(consumer, FakeMessage(make_upload().to_json_bytes(),
+                                                 _headers=[("traceId", b"abc123"), ("other", b"x")]))
+
+    headers = dict(_produced(log)[0]["headers"] or [])
+    assert headers == {"traceId": b"abc123"}
+
+
 def test_pipeline_failure_publishes_failed_event_then_commits(worker_env, make_upload) -> None:
     worker, consumer, log = worker_env
     worker.handle_message(consumer, FakeMessage(make_upload(content=None).to_json_bytes()))

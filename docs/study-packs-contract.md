@@ -30,6 +30,19 @@ backend: consume parsed -> status=EMBEDDING -> read chunks file -> enforce chunk
 - Bootstrap: host `localhost:9092`; inside compose network `kafka:29092`.
 - JSON values (UTF-8), message key = `packId` as a string.
 - Timestamps: ISO-8601 UTC strings, e.g. `2026-09-27T10:15:30Z`.
+- `wingman.document.uploaded` is sent via a **transactional outbox**: StudyPackService writes an
+  `OutboxEvent` row in the same transaction as the StudyPack insert, so the two can never diverge;
+  `OutboxPublisher` (a `@Scheduled` poller, `app.outbox.*`) sends pending rows and deletes them on
+  success, retrying on failure up to `app.outbox.max-attempts` before marking a row `FAILED` for an
+  operator to notice. A row still gets to the broker even if it's briefly unreachable when the
+  upload happens — unlike a plain fire-and-forget async send, which would simply lose it.
+- Every message carries a `traceId` header when the backend has one (CorrelationIdFilter's
+  per-request correlation id, not full distributed tracing — just enough to grep one request's
+  logs across the async hop): `wingman.document.uploaded` always does (set when the OutboxEvent
+  row is written); the doc-processor echoes it straight back onto `wingman.document.parsed` /
+  `wingman.document.failed` (`app/consumer.py`'s `_trace_headers`), and DocumentEventsListener
+  reads it back into MDC. A message without the header (nothing in flight when it was produced) is
+  simply not correlated — never an error.
 
 ### `wingman.document.uploaded` (backend -> doc-processor)
 
@@ -371,3 +384,74 @@ Generate errors: `PACK_NOT_READY` (409), `FLASHCARDS_ALREADY_GENERATING` (409),
   flashcards" (notes it uses the monthly token budget) → poll until READY/FAILED; then a study
   session over the due cards (flip, then Again/Hard/Good/Easy) with a "browse all cards" view
   alongside it.
+
+## Course from a pack (Phase 6)
+
+A pack gets an LLM-generated **course outline** (modules of lessons, titles + one-line summaries),
+grounded in a sample spread across its chunks. Unlike a quiz bank or flashcard deck, a lesson's
+full content is not written at generation time — it's written lazily, one LLM call, the first time
+the lesson is opened, then cached. Only outline generation and a lesson's first open ever call the
+LLM or touch the monthly token quota; everything else (reading a cached lesson, marking one
+complete) is a plain read/write.
+
+### Modelling
+
+- A module is not a separate table: `CourseLesson` carries `moduleIndex`/`moduleTitle` and
+  `lessonIndexInModule`, the same way a quiz bank groups by `questionType` rather than a separate
+  section row.
+- Each lesson is assigned a contiguous, non-overlapping slice of the pack's chunks at generation
+  time (`sourceChunkStart`/`sourceChunkEnd`, exclusive end) — read only once the lesson is first
+  opened. A pack with fewer chunks than the outline's lesson count has lessons trimmed to fit (every
+  lesson needs its own non-empty slice to write from).
+- `completed` lives directly on the lesson row: a pack is only ever studied by its own owner, same
+  reasoning as a flashcard's SM-2 schedule.
+- Regenerating replaces the whole outline, including every lesson's written content and completion
+  state. Deleting the pack deletes the outline.
+
+`PackDto` gains:
+
+```json
+{ "courseStatus": "NONE" | "GENERATING" | "READY" | "FAILED", "courseLessonCount": 18,
+  "courseErrorMessage": null }
+```
+
+A outline left `GENERATING` by a backend restart is marked `FAILED` at startup ("interrupted").
+
+### REST
+
+| Method | Path | Body / notes | Response |
+|---|---|---|---|
+| POST | `/api/packs/{id}/course/generate` | owner only; pack must be READY | 202 `PackDto` (courseStatus GENERATING) |
+| GET | `/api/packs/{id}/course` | owner only; outline must be READY | `CourseDto` |
+| GET | `/api/packs/{id}/course/lessons/{lessonId}` | owner only; writes + caches content on first call | `CourseLessonDto` |
+| PUT | `/api/packs/{id}/course/lessons/{lessonId}/complete` | `{ "completed": true }` | `CourseLessonDto` |
+
+Generate errors: `PACK_NOT_READY` (409), `COURSE_ALREADY_GENERATING` (409),
+`CHAT_QUOTA_EXCEEDED` (429), `CHAT_UNAVAILABLE` (503). Outline/lesson errors: `PACK_NOT_READY`
+(409), `COURSE_NOT_READY` (409), not found / not owner (404). Opening a lesson for the first time
+can also fail the way a pack quiz's grading does: `CHAT_QUOTA_EXCEEDED` (429), `LLM_RATE_LIMITED`
+(503) or `LLM_ERROR` (502) — nothing is cached then, the client can simply request it again.
+
+### DTOs
+
+```json
+// CourseLessonSummaryDto (listed in CourseDto, no content)
+{ "id": 1, "title": "What MVCC solves", "summary": "...", "hasContent": true, "completed": false }
+
+// CourseModuleDto
+{ "title": "Concurrency control", "lessons": [CourseLessonSummaryDto...] }
+
+// CourseDto
+{ "modules": [CourseModuleDto...], "totalLessons": 18, "completedLessons": 4 }
+
+// CourseLessonDto (GET one lesson / PUT complete)
+{ "id": 1, "title": "What MVCC solves", "summary": "...", "content": "...",
+  "sourcePage": 12, "sourceSection": "Chapter 3 > Concurrency", "completed": false }
+```
+
+### Frontend
+
+- READY pack: **Course** button → `/packs/:packId/course`: outline status; "Generate course" (notes
+  it uses the monthly token budget) → poll until READY/FAILED; then modules/lessons with progress
+  (completed/total) → open a lesson at `/packs/:packId/course/lessons/:lessonId` (fetches and
+  caches its content on open) → mark complete, next/previous lesson.
