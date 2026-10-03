@@ -3,9 +3,11 @@ package com.mockinterview.backend.kafka;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mockinterview.backend.config.StorageProperties;
+import com.mockinterview.backend.entity.OutboxEvent;
 import com.mockinterview.backend.entity.StudyPack;
 import com.mockinterview.backend.entity.StudyPackStatus;
 import com.mockinterview.backend.entity.User;
+import com.mockinterview.backend.repository.OutboxEventRepository;
 import com.mockinterview.backend.repository.StudyPackRepository;
 import com.mockinterview.backend.repository.UserRepository;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -47,6 +49,9 @@ import static org.mockito.Mockito.*;
         "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}",
         "spring.kafka.listener.auto-startup=true",
         "spring.kafka.admin.auto-create=true",
+        // The outbox test below drives OutboxPublisher manually; a long interval keeps the
+        // real @Scheduled poll from also picking up (and double-sending) the same row.
+        "app.outbox.poll-interval-ms=600000",
 })
 @EmbeddedKafka(partitions = 1)
 @ActiveProfiles("test")
@@ -58,7 +63,8 @@ class StudyPackKafkaIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private StudyPackRepository studyPackRepository;
     @Autowired private StorageProperties storageProperties;
-    @Autowired private DocumentEventPublisher documentEventPublisher;
+    @Autowired private OutboxEventRepository outboxEventRepository;
+    @Autowired private OutboxPublisher outboxPublisher;
 
     @MockitoSpyBean private VectorStore vectorStore;
 
@@ -150,12 +156,18 @@ class StudyPackKafkaIntegrationTest {
     }
 
     @Test
-    void thePublisherWritesContractJsonKeyedByPackIdWithoutJavaTypeHeaders() throws Exception {
+    void theOutboxPublisherSendsContractJsonKeyedByPackIdWithoutJavaTypeHeadersAndDeletesTheRow() throws Exception {
         try (Consumer<String, String> uploaded = consumerFor("wingman.document.uploaded")) {
             DocumentUploadedEvent event = new DocumentUploadedEvent("e1", 99L, 7L,
                     com.mockinterview.backend.entity.Tier.PRO, "notes.docx", "application/x", "packs/99/source.docx",
                     123, true, 300, "2026-09-27T10:15:30Z");
-            documentEventPublisher.publishUploaded(event);
+            OutboxEvent outbox = new OutboxEvent();
+            outbox.setTopic("wingman.document.uploaded");
+            outbox.setMessageKey("99");
+            outbox.setPayload(objectMapper.writeValueAsString(event));
+            outbox = outboxEventRepository.save(outbox);
+
+            outboxPublisher.publishPending();
 
             ConsumerRecord<String, String> record = KafkaTestUtils.getSingleRecord(uploaded, "wingman.document.uploaded",
                     Duration.ofSeconds(30));
@@ -164,6 +176,7 @@ class StudyPackKafkaIntegrationTest {
             assertThat(json.get("occurredAt").asText()).isEqualTo("2026-09-27T10:15:30Z");
             assertThat(record.key()).isEqualTo("99");
             assertThat(record.headers().lastHeader("__TypeId__")).isNull();
+            assertThat(outboxEventRepository.findById(outbox.getId())).isEmpty();
         }
     }
 }

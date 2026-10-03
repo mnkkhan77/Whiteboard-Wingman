@@ -1,16 +1,23 @@
 package com.mockinterview.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mockinterview.backend.config.CorrelationIdFilter;
+import com.mockinterview.backend.config.StudyPackKafkaProperties;
 import com.mockinterview.backend.config.TierProperties;
 import com.mockinterview.backend.config.TierProperties.TierLimits;
 import com.mockinterview.backend.dto.PackDto;
 import com.mockinterview.backend.dto.PackLimitsDto;
+import com.mockinterview.backend.entity.OutboxEvent;
 import com.mockinterview.backend.entity.StudyPack;
 import com.mockinterview.backend.entity.StudyPackStatus;
 import com.mockinterview.backend.entity.User;
 import com.mockinterview.backend.exception.StudyPackUploadException;
 import com.mockinterview.backend.kafka.DocumentUploadedEvent;
+import com.mockinterview.backend.repository.OutboxEventRepository;
 import com.mockinterview.backend.repository.StudyPackRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -41,10 +48,13 @@ public class StudyPackService {
     private static final int MAX_NAME_LENGTH = 255;
 
     private final StudyPackRepository studyPackRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final StorageService storageService;
     private final TierProperties tierProperties;
+    private final StudyPackKafkaProperties kafkaProperties;
     private final ApplicationEventPublisher eventPublisher;
     private final ChatQuotaService chatQuotaService;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public PackLimitsDto limits(User user) {
@@ -68,7 +78,9 @@ public class StudyPackService {
     /**
      * Validates, stores and enqueues an upload. The file is written inside the transaction (the
      * path needs the generated id); if the transaction then rolls back, StudyPackLifecycleListener
-     * deletes the file again, and the Kafka event is only published once the row has committed.
+     * deletes the file again. The Kafka event is written here as an OutboxEvent row, in the SAME
+     * transaction as the StudyPack insert, so the two can never diverge; OutboxPublisher sends it
+     * (and deletes the row) once this transaction has committed — see V23's migration comment.
      */
     @Transactional
     public PackDto upload(User user, MultipartFile file, String title) {
@@ -87,8 +99,9 @@ public class StudyPackService {
         pack.setStatus(StudyPackStatus.QUEUED);
         pack = studyPackRepository.save(pack); // IDENTITY: inserts now, so the id is known
 
+        outboxEventRepository.save(outboxEvent(pack.getId(), uploadedEvent(user, limits, pack)));
         // Registered before the write so a failure part-way through the write still cleans up.
-        eventPublisher.publishEvent(new StudyPackLifecycleListener.PackUploaded(uploadedEvent(user, limits, pack)));
+        eventPublisher.publishEvent(new StudyPackLifecycleListener.PackUploaded(pack.getId()));
         try (InputStream in = file.getInputStream()) {
             pack.setStoragePath(storageService.writePackSource(pack.getId(), extension, in));
         } catch (IOException e) {
@@ -154,6 +167,21 @@ public class StudyPackService {
                 pack.getContentType(), StorageService.packSourcePath(pack.getId(), pack.getExtension()),
                 pack.getSizeBytes(), limits.ocrEnabled(), limits.maxPages(),
                 Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+    }
+
+    /** Values are plain JSON strings (StringSerializer), like every other topic in this pipeline —
+     *  no Java type headers, so the Python doc-processor never needs to know about this class. */
+    private OutboxEvent outboxEvent(long packId, DocumentUploadedEvent event) {
+        OutboxEvent outbox = new OutboxEvent();
+        outbox.setTopic(kafkaProperties.topics().uploaded());
+        outbox.setMessageKey(String.valueOf(packId)); // same partitioning key the old publisher used
+        outbox.setTraceId(MDC.get(CorrelationIdFilter.MDC_KEY)); // carried onto the Kafka header by OutboxPublisher
+        try {
+            outbox.setPayload(objectMapper.writeValueAsString(event));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize upload event for pack " + packId, e);
+        }
+        return outbox;
     }
 
     private static byte[] readHeader(MultipartFile file) {

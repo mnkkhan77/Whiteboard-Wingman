@@ -1,7 +1,5 @@
 package com.mockinterview.backend.service;
 
-import com.mockinterview.backend.kafka.DocumentEventPublisher;
-import com.mockinterview.backend.kafka.DocumentUploadedEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +15,10 @@ import java.util.List;
  * known. StudyPackService publishes these as Spring application events inside its transaction;
  * {@link TransactionalEventListener} defers them to the matching commit/rollback phase:
  *
- * - upload committed  -> publish wingman.document.uploaded. Publishing from inside the transaction
- *   would let the doc-processor (and then our own parsed consumer) see a packId whose row isn't
- *   committed yet — or never will be, if the commit then fails.
  * - upload rolled back -> delete the file already written to disk, so no orphan upload remains.
+ *   (Telling the doc-processor about the upload is a separate concern, handled by the
+ *   transactional outbox — the OutboxEvent row StudyPackService writes in the same transaction as
+ *   the StudyPack insert, sent by OutboxPublisher — so it needs no commit-phase listener here.)
  * - delete committed  -> remove the pack's vectors and files. Done after commit so a failed delete
  *   never leaves a READY pack whose chunks are already gone.
  */
@@ -30,11 +28,10 @@ public class StudyPackLifecycleListener {
 
     private static final Logger log = LoggerFactory.getLogger(StudyPackLifecycleListener.class);
 
-    private final DocumentEventPublisher documentEventPublisher;
     private final StorageService storageService;
     private final VectorStore vectorStore;
 
-    public record PackUploaded(DocumentUploadedEvent event) {
+    public record PackUploaded(long packId) {
     }
 
     /** chunkCount may be null (not parsed yet): then no vectors can exist for it yet — and if
@@ -43,14 +40,9 @@ public class StudyPackLifecycleListener {
     public record PackDeleted(long packId, Integer chunkCount) {
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onUploadCommitted(PackUploaded uploaded) {
-        documentEventPublisher.publishUploaded(uploaded.event());
-    }
-
     @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK)
     public void onUploadRolledBack(PackUploaded uploaded) {
-        storageService.deletePackDir(uploaded.event().packId());
+        storageService.deletePackDir(uploaded.packId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

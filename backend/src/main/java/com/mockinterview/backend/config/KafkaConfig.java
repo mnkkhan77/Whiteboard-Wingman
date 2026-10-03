@@ -20,7 +20,7 @@ import org.springframework.util.backoff.FixedBackOff;
  * adds what properties can't express: the retry/dead-letter policy and the topics to create.
  */
 @Configuration
-@EnableConfigurationProperties(StudyPackKafkaProperties.class)
+@EnableConfigurationProperties({StudyPackKafkaProperties.class, OutboxProperties.class})
 public class KafkaConfig {
 
     private static final String DLT_SUFFIX = ".DLT";
