@@ -5,10 +5,7 @@ import { formatBytes, isPackInFlight, packErrorMessage } from "../utils/packs";
 import type { PackDto, PackLimitsDto } from "../types/api";
 
 // Next-phase features, shown disabled on READY packs so the roadmap is visible.
-const COMING_SOON_ACTIONS = [
-  { label: "Flashcards", icon: "🗂️" },
-  { label: "Course", icon: "🎓" },
-];
+const COMING_SOON_ACTIONS = [{ label: "Course", icon: "🎓" }];
 
 interface PackListItemProps {
   pack: PackDto;
@@ -115,6 +112,13 @@ export function PackListItem({ pack, limits, onDelete }: PackListItemProps) {
             aria-label={`Quiz yourself on ${pack.title}`}
           >
             <span aria-hidden>📝</span> Quiz
+          </Link>
+          <Link
+            to={`/packs/${pack.id}/flashcards`}
+            className="button secondary pack-small-button"
+            aria-label={`Flashcards for ${pack.title}`}
+          >
+            <span aria-hidden>🗂️</span> Flashcards
           </Link>
           {COMING_SOON_ACTIONS.map((a) => (
             <button

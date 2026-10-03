@@ -298,3 +298,76 @@ difficulty and never repeat within a session.
   timed-mode options → start → the existing interview page.
 - Everywhere a topic label is shown, prefer `packTitle` when present; `topicLabel` must never
   crash on an unknown/null topic.
+
+## Flashcards from a pack (Phase 5)
+
+A pack gets an LLM-generated **flashcard deck** (front/back pairs, grounded in its chunks), studied
+with the **SM-2** spaced-repetition algorithm. Unlike a quiz, studying never calls the LLM — only
+deck generation does, so only generation checks the monthly token quota.
+
+### Modelling
+
+- `PackFlashcard`: `front`, `back`, `sourcePage`/`sourceSection`/`sourceChunkIndex`, plus its own
+  SM-2 schedule (`easeFactor`, `intervalDays`, `repetitions`, `dueAt`, `lastReviewedAt`). A pack is
+  only ever studied by its own owner, so the schedule lives directly on the row — no separate
+  per-user review-state table, unlike a quiz's per-session grading.
+- Deck generation uses the **server Groq key** and is charged to the same monthly
+  `chatTokensPerMonth` quota as chat and quizzes. Reviewing a card is a pure local computation
+  (Sm2Scheduler) and never touches the quota.
+- Regenerating replaces the whole deck (including every card's SM-2 progress). Deleting the pack
+  deletes the deck.
+
+### SM-2 scheduling
+
+Each review answers one of four buttons, mapped to SM-2's 0-5 quality scale: **Again** (0, a lapse:
+repetitions and interval reset, due again tomorrow), **Hard** (3), **Good** (4), **Easy** (5) — Hard
+and above advance the card: 1 day after the first good review, 6 days after the second, then
+`interval * easeFactor` after that. `easeFactor` moves by the standard SM-2 formula, floored at 1.3.
+A new card is due immediately (never reviewed).
+
+### Deck generation
+
+- Generated on demand (not on upload), asynchronously, from chunks spread across the whole pack.
+- Target size 30 cards, each tied to its source page/section.
+- Regenerating replaces the bank. Deleting the pack deletes the bank.
+
+`PackDto` gains:
+
+```json
+{ "flashcardStatus": "NONE" | "GENERATING" | "READY" | "FAILED", "flashcardCount": 30,
+  "flashcardErrorMessage": null }
+```
+
+A deck left `GENERATING` by a backend restart is marked `FAILED` at startup ("interrupted").
+
+### REST
+
+| Method | Path | Body / notes | Response |
+|---|---|---|---|
+| POST | `/api/packs/{id}/flashcards/generate` | owner only; pack must be READY | 202 `PackDto` (flashcardStatus GENERATING) |
+| GET | `/api/packs/{id}/flashcards` | owner only; deck must be READY | `FlashcardDeckDto` |
+| POST | `/api/packs/{id}/flashcards/{cardId}/review` | `{ "quality": "AGAIN" \| "HARD" \| "GOOD" \| "EASY" }` | `PackFlashcardDto` (updated schedule) |
+
+Generate errors: `PACK_NOT_READY` (409), `FLASHCARDS_ALREADY_GENERATING` (409),
+`CHAT_QUOTA_EXCEEDED` (429), `CHAT_UNAVAILABLE` (503). Deck/review errors: `PACK_NOT_READY` (409),
+`FLASHCARDS_NOT_READY` (409), not found / not owner (404).
+
+### DTOs
+
+```json
+// PackFlashcardDto
+{ "id": 1, "front": "What is MVCC?", "back": "Multi-version concurrency control: ...",
+  "sourcePage": 12, "sourceSection": "Chapter 3 > Concurrency",
+  "easeFactor": 2.5, "intervalDays": 6, "repetitions": 2,
+  "dueAt": "2026-10-09T10:15:30", "lastReviewedAt": "2026-10-03T10:15:30" }
+
+// FlashcardDeckDto
+{ "cards": [PackFlashcardDto...], "dueCount": 12 }
+```
+
+### Frontend
+
+- READY pack: **Flashcards** button → `/packs/:packId/flashcards`: deck status; "Generate
+  flashcards" (notes it uses the monthly token budget) → poll until READY/FAILED; then a study
+  session over the due cards (flip, then Again/Hard/Good/Easy) with a "browse all cards" view
+  alongside it.

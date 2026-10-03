@@ -249,6 +249,9 @@ export type PackErrorCode =
   | "CHUNK_LIMIT_EXCEEDED"
   | "EMBEDDING_FAILED";
 
+/** State of a pack's LLM-generated flashcard deck (Phase 5). */
+export type FlashcardStatus = "NONE" | "GENERATING" | "READY" | "FAILED";
+
 export interface PackDto {
   id: number;
   title: string;
@@ -265,6 +268,10 @@ export interface PackDto {
   /** Questions in the bank (0 / null until one has been generated). */
   quizQuestionCount: number | null;
   quizErrorMessage: string | null;
+  flashcardStatus: FlashcardStatus;
+  /** Cards in the deck (0 / null until one has been generated). */
+  flashcardCount: number | null;
+  flashcardErrorMessage: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -364,5 +371,37 @@ export type QuizErrorCode =
   | "PACK_NOT_READY"
   | "QUIZ_NOT_READY"
   | "QUIZ_ALREADY_GENERATING"
+  | "CHAT_QUOTA_EXCEEDED"
+  | "CHAT_UNAVAILABLE";
+
+// --- Flashcards from a pack (Phase 5) ---
+
+/** The four review buttons, mapped to the backend's SM-2 quality scale. */
+export type ReviewQuality = "AGAIN" | "HARD" | "GOOD" | "EASY";
+
+/** One flashcard with its SM-2 schedule. */
+export interface PackFlashcardDto {
+  id: number;
+  front: string;
+  back: string;
+  sourcePage: number | null;
+  sourceSection: string | null;
+  easeFactor: number;
+  intervalDays: number;
+  repetitions: number;
+  dueAt: string;
+  lastReviewedAt: string | null;
+}
+
+export interface FlashcardDeckDto {
+  cards: PackFlashcardDto[];
+  dueCount: number;
+}
+
+/** Every `code` the flashcard endpoints (deck generation, deck read, review) can produce. */
+export type FlashcardErrorCode =
+  | "PACK_NOT_READY"
+  | "FLASHCARDS_NOT_READY"
+  | "FLASHCARDS_ALREADY_GENERATING"
   | "CHAT_QUOTA_EXCEEDED"
   | "CHAT_UNAVAILABLE";

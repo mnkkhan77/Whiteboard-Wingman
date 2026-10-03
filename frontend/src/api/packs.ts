@@ -1,5 +1,5 @@
 import { apiFetch, apiUpload } from "./client";
-import type { PackDto, PackLimitsDto } from "../types/api";
+import type { FlashcardDeckDto, PackDto, PackFlashcardDto, PackLimitsDto, ReviewQuality } from "../types/api";
 
 export function getPackLimits(token: string) {
   return apiFetch<PackLimitsDto>("/packs/limits", { token });
@@ -33,4 +33,24 @@ export function deletePack(token: string, packId: number) {
  *  Resolves with the pack in quizStatus GENERATING (202); poll getPack until READY / FAILED. */
 export function generateQuiz(token: string, packId: number) {
   return apiFetch<PackDto>(`/packs/${packId}/quiz/generate`, { method: "POST", token });
+}
+
+/** Starts (or restarts — the new deck replaces the old one) async flashcard-deck generation.
+ *  Resolves with the pack in flashcardStatus GENERATING (202); poll getPack until READY / FAILED. */
+export function generateFlashcards(token: string, packId: number) {
+  return apiFetch<PackDto>(`/packs/${packId}/flashcards/generate`, { method: "POST", token });
+}
+
+/** The pack's whole flashcard deck plus how many cards are due now. Deck must be READY. */
+export function getFlashcards(token: string, packId: number, signal?: AbortSignal) {
+  return apiFetch<FlashcardDeckDto>(`/packs/${packId}/flashcards`, { token, signal });
+}
+
+/** Records one review and returns the card's updated SM-2 schedule. */
+export function reviewFlashcard(token: string, packId: number, cardId: number, quality: ReviewQuality) {
+  return apiFetch<PackFlashcardDto>(`/packs/${packId}/flashcards/${cardId}/review`, {
+    method: "POST",
+    token,
+    body: { quality },
+  });
 }
