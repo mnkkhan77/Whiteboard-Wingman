@@ -17,6 +17,8 @@ import PacksPage from "./pages/PacksPage";
 import PackChatPage from "./pages/PackChatPage";
 import PackQuizPage from "./pages/PackQuizPage";
 import PackFlashcardsPage from "./pages/PackFlashcardsPage";
+import PackCoursePage from "./pages/PackCoursePage";
+import PackCourseLessonPage from "./pages/PackCourseLessonPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminUserDetailPage from "./pages/AdminUserDetailPage";
 
@@ -58,6 +60,8 @@ export default function App() {
                 <Route path="/packs/:packId/chat" element={<PackChatPage />} />
                 <Route path="/packs/:packId/quiz" element={<PackQuizPage />} />
                 <Route path="/packs/:packId/flashcards" element={<PackFlashcardsPage />} />
+                <Route path="/packs/:packId/course" element={<PackCoursePage />} />
+                <Route path="/packs/:packId/course/lessons/:lessonId" element={<PackCourseLessonPage />} />
 
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminDashboardPage />} />

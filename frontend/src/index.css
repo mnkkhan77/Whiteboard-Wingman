@@ -2252,14 +2252,6 @@ button.danger:hover:not(:disabled) {
   font-size: 0.85rem;
 }
 
-.pack-coming-soon {
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
-}
-
 /* Layout/hover come from .session-row; this only turns the card into a plain link. */
 .dashboard-packs-card {
   padding: 16px 20px;
@@ -2904,4 +2896,74 @@ button.chat-example {
 .flashcard-browse-text span {
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+/* --- Pack course --- */
+
+.course-module {
+  margin-top: 18px;
+}
+
+.course-module-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.course-lesson-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.course-lesson-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.course-lesson-link:hover {
+  background: var(--bg-accent);
+  border-color: var(--primary);
+}
+
+.course-lesson-check {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.course-lesson-check-done {
+  background: var(--easy);
+  border-color: var(--easy);
+  color: #fff;
+}
+
+.course-lesson-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.course-lesson-page h1 {
+  margin: 4px 0 0;
+}
+
+.course-lesson-page .chat-markdown {
+  margin-top: 16px;
 }

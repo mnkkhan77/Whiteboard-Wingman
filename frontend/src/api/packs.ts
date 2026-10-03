@@ -1,5 +1,13 @@
 import { apiFetch, apiUpload } from "./client";
-import type { FlashcardDeckDto, PackDto, PackFlashcardDto, PackLimitsDto, ReviewQuality } from "../types/api";
+import type {
+  CourseDto,
+  CourseLessonDto,
+  FlashcardDeckDto,
+  PackDto,
+  PackFlashcardDto,
+  PackLimitsDto,
+  ReviewQuality,
+} from "../types/api";
 
 export function getPackLimits(token: string) {
   return apiFetch<PackLimitsDto>("/packs/limits", { token });
@@ -52,5 +60,31 @@ export function reviewFlashcard(token: string, packId: number, cardId: number, q
     method: "POST",
     token,
     body: { quality },
+  });
+}
+
+/** Starts (or restarts — the new outline replaces the old one, including every lesson's written
+ *  content) async course generation. Resolves with the pack in courseStatus GENERATING (202); poll
+ *  getPack until READY / FAILED. */
+export function generateCourse(token: string, packId: number) {
+  return apiFetch<PackDto>(`/packs/${packId}/course/generate`, { method: "POST", token });
+}
+
+/** The pack's whole course outline grouped into modules, plus completion progress. Outline must be READY. */
+export function getCourse(token: string, packId: number, signal?: AbortSignal) {
+  return apiFetch<CourseDto>(`/packs/${packId}/course`, { token, signal });
+}
+
+/** One lesson's full detail. The backend writes and caches its content the first time this is
+ *  called, so this call can be slower (and can fail with LLM_RATE_LIMITED/LLM_ERROR) than a plain read. */
+export function getCourseLesson(token: string, packId: number, lessonId: number, signal?: AbortSignal) {
+  return apiFetch<CourseLessonDto>(`/packs/${packId}/course/lessons/${lessonId}`, { token, signal });
+}
+
+export function setCourseLessonCompleted(token: string, packId: number, lessonId: number, completed: boolean) {
+  return apiFetch<CourseLessonDto>(`/packs/${packId}/course/lessons/${lessonId}/complete`, {
+    method: "PUT",
+    token,
+    body: { completed },
   });
 }

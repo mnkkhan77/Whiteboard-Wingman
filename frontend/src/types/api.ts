@@ -252,6 +252,9 @@ export type PackErrorCode =
 /** State of a pack's LLM-generated flashcard deck (Phase 5). */
 export type FlashcardStatus = "NONE" | "GENERATING" | "READY" | "FAILED";
 
+/** State of a pack's LLM-generated course outline (Phase 6). */
+export type CourseStatus = "NONE" | "GENERATING" | "READY" | "FAILED";
+
 export interface PackDto {
   id: number;
   title: string;
@@ -272,6 +275,10 @@ export interface PackDto {
   /** Cards in the deck (0 / null until one has been generated). */
   flashcardCount: number | null;
   flashcardErrorMessage: string | null;
+  courseStatus: CourseStatus;
+  /** Lessons in the outline (0 / null until one has been generated). */
+  courseLessonCount: number | null;
+  courseErrorMessage: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -405,3 +412,46 @@ export type FlashcardErrorCode =
   | "FLASHCARDS_ALREADY_GENERATING"
   | "CHAT_QUOTA_EXCEEDED"
   | "CHAT_UNAVAILABLE";
+
+// --- Course from a pack (Phase 6) ---
+
+/** One lesson as listed in a course outline — no content. */
+export interface CourseLessonSummaryDto {
+  id: number;
+  title: string;
+  summary: string;
+  hasContent: boolean;
+  completed: boolean;
+}
+
+export interface CourseModuleDto {
+  title: string;
+  lessons: CourseLessonSummaryDto[];
+}
+
+export interface CourseDto {
+  modules: CourseModuleDto[];
+  totalLessons: number;
+  completedLessons: number;
+}
+
+/** A single lesson's full detail; `content` is generated (and cached) the first time it's opened. */
+export interface CourseLessonDto {
+  id: number;
+  title: string;
+  summary: string;
+  content: string;
+  sourcePage: number | null;
+  sourceSection: string | null;
+  completed: boolean;
+}
+
+/** Every `code` the course endpoints (outline generation, outline read, opening a lesson) can produce. */
+export type CourseErrorCode =
+  | "PACK_NOT_READY"
+  | "COURSE_NOT_READY"
+  | "COURSE_ALREADY_GENERATING"
+  | "CHAT_QUOTA_EXCEEDED"
+  | "CHAT_UNAVAILABLE"
+  | "LLM_RATE_LIMITED"
+  | "LLM_ERROR";
