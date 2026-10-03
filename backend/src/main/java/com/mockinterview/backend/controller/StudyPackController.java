@@ -3,6 +3,9 @@ package com.mockinterview.backend.controller;
 import com.mockinterview.backend.dto.ChatHistoryDto;
 import com.mockinterview.backend.dto.ChatRequest;
 import com.mockinterview.backend.dto.ChatStreamEvent;
+import com.mockinterview.backend.dto.CourseDto;
+import com.mockinterview.backend.dto.CourseLessonCompletionRequest;
+import com.mockinterview.backend.dto.CourseLessonDto;
 import com.mockinterview.backend.dto.FlashcardDeckDto;
 import com.mockinterview.backend.dto.FlashcardReviewRequest;
 import com.mockinterview.backend.dto.PackDto;
@@ -11,6 +14,7 @@ import com.mockinterview.backend.dto.PackLimitsDto;
 import com.mockinterview.backend.entity.User;
 import com.mockinterview.backend.repository.UserRepository;
 import com.mockinterview.backend.service.PackChatService;
+import com.mockinterview.backend.service.PackCourseService;
 import com.mockinterview.backend.service.PackFlashcardService;
 import com.mockinterview.backend.service.PackQuizService;
 import com.mockinterview.backend.service.StudyPackService;
@@ -38,6 +42,7 @@ public class StudyPackController {
     private final PackChatService packChatService;
     private final PackQuizService packQuizService;
     private final PackFlashcardService packFlashcardService;
+    private final PackCourseService packCourseService;
     private final UserRepository userRepository;
 
     // Literal path segment, resolved before the sibling "/{id}" mapping — no routing collision.
@@ -117,6 +122,31 @@ public class StudyPackController {
     public PackFlashcardDto reviewFlashcard(@PathVariable Long id, @PathVariable Long cardId,
                                             @Valid @RequestBody FlashcardReviewRequest request, Authentication auth) {
         return packFlashcardService.review(resolveUser(auth), id, cardId, request.quality());
+    }
+
+    /** 202: the outline is written in the background; poll GET /api/packs/{id} for courseStatus. */
+    @PostMapping("/{id}/course/generate")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PackDto generateCourse(@PathVariable Long id, Authentication auth) {
+        return packCourseService.requestGeneration(resolveUser(auth), id);
+    }
+
+    @GetMapping("/{id}/course")
+    public CourseDto course(@PathVariable Long id, Authentication auth) {
+        return packCourseService.course(resolveUser(auth), id);
+    }
+
+    /** Generates and caches the lesson's content the first time it's opened. */
+    @GetMapping("/{id}/course/lessons/{lessonId}")
+    public CourseLessonDto courseLesson(@PathVariable Long id, @PathVariable Long lessonId, Authentication auth) {
+        return packCourseService.lesson(resolveUser(auth), id, lessonId);
+    }
+
+    @PutMapping(value = "/{id}/course/lessons/{lessonId}/complete", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public CourseLessonDto completeCourseLesson(@PathVariable Long id, @PathVariable Long lessonId,
+                                                @Valid @RequestBody CourseLessonCompletionRequest request,
+                                                Authentication auth) {
+        return packCourseService.setCompleted(resolveUser(auth), id, lessonId, request.completed());
     }
 
     private User resolveUser(Authentication auth) {

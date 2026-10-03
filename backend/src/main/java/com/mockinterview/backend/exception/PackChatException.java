@@ -20,6 +20,8 @@ public class PackChatException extends RuntimeException {
     public static final String QUIZ_ALREADY_GENERATING = "QUIZ_ALREADY_GENERATING";
     public static final String FLASHCARDS_NOT_READY = "FLASHCARDS_NOT_READY";
     public static final String FLASHCARDS_ALREADY_GENERATING = "FLASHCARDS_ALREADY_GENERATING";
+    public static final String COURSE_NOT_READY = "COURSE_NOT_READY";
+    public static final String COURSE_ALREADY_GENERATING = "COURSE_ALREADY_GENERATING";
     /** Server-key provider failures while grading / reporting a pack quiz (same codes as the chat
      *  stream's error event). Never carries the provider's own error body: that is about the
      *  server's account, not the user's. */

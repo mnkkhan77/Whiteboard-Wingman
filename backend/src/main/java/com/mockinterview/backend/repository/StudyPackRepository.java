@@ -1,5 +1,6 @@
 package com.mockinterview.backend.repository;
 
+import com.mockinterview.backend.entity.CourseStatus;
 import com.mockinterview.backend.entity.FlashcardStatus;
 import com.mockinterview.backend.entity.QuizStatus;
 import com.mockinterview.backend.entity.StudyPack;
@@ -176,4 +177,50 @@ public interface StudyPackRepository extends JpaRepository<StudyPack, Long> {
             """)
     int failAllFlashcardGenerations(@Param("generating") FlashcardStatus generating, @Param("message") String message,
                                     @Param("now") LocalDateTime now);
+
+    // ---- Course outline (docs/study-packs-contract.md "Course from a pack"). Same
+    // conditional-update style as the question bank and flashcard deck above.
+
+    /** Enters GENERATING only from a READY pack whose outline isn't already generating — the one
+     *  gate that makes two simultaneous generate requests start exactly one job. */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.courseStatus = com.mockinterview.backend.entity.CourseStatus.GENERATING,
+                   p.courseErrorMessage = null, p.updatedAt = :now
+            where p.id = :id and p.status = com.mockinterview.backend.entity.StudyPackStatus.READY
+              and p.courseStatus <> com.mockinterview.backend.entity.CourseStatus.GENERATING
+            """)
+    int startCourseGeneration(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    /** Joins PackCourseBankWriter's transaction, where it also row-locks the pack before the
+     *  outline rows are swapped, so a concurrent pack DELETE waits instead of racing the inserts. */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.courseStatus = com.mockinterview.backend.entity.CourseStatus.READY,
+                   p.courseLessonCount = :count, p.courseErrorMessage = null, p.updatedAt = :now
+            where p.id = :id and p.courseStatus = com.mockinterview.backend.entity.CourseStatus.GENERATING
+            """)
+    int finishCourseGeneration(@Param("id") Long id, @Param("count") int count, @Param("now") LocalDateTime now);
+
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.courseStatus = com.mockinterview.backend.entity.CourseStatus.FAILED,
+                   p.courseErrorMessage = :message, p.updatedAt = :now
+            where p.id = :id and p.courseStatus = com.mockinterview.backend.entity.CourseStatus.GENERATING
+            """)
+    int failCourseGeneration(@Param("id") Long id, @Param("message") String message, @Param("now") LocalDateTime now);
+
+    /** Startup only: a job can't survive a restart (it lives on an in-memory executor). */
+    @Transactional
+    @Modifying
+    @Query("""
+            update StudyPack p set p.courseStatus = com.mockinterview.backend.entity.CourseStatus.FAILED,
+                   p.courseErrorMessage = :message, p.updatedAt = :now
+            where p.courseStatus = :generating
+            """)
+    int failAllCourseGenerations(@Param("generating") CourseStatus generating, @Param("message") String message,
+                                 @Param("now") LocalDateTime now);
 }

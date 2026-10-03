@@ -56,6 +56,41 @@ public class MeteredLlmCall {
     }
 
     /**
+     * {@link #entity}, but plain prose rather than a structured-output type — a course lesson's
+     * content, written once and cached, not JSON. No format suffix is appended to the prompt.
+     *
+     * @throws RuntimeException the provider's error (nothing is charged then), or
+     *                          IllegalStateException for a blank response (charged: spent anyway)
+     */
+    public String text(ChatClient client, User user, String system, String userText) {
+        ChatResponse response = client.prompt().system(system).user(userText).call().chatResponse();
+        String text = textOf(response);
+        chargeQuietly(user, tokensOf(response, system.length() + userText.length(), text.length()));
+        if (text.isBlank()) {
+            throw new IllegalStateException("The model returned an empty response");
+        }
+        return text.strip();
+    }
+
+    /** {@link #text}, with the same rate-limit retry as {@link #entityWithRetry}. */
+    public String textWithRetry(ChatClient client, User user, String system, String userText,
+                                int retries, Duration backoff) {
+        Duration wait = backoff;
+        for (int attempt = 0; ; attempt++) {
+            try {
+                return text(client, user, system, userText);
+            } catch (RuntimeException e) {
+                if (!isRateLimited(e) || attempt >= retries) {
+                    throw e;
+                }
+                log.info("Server LLM rate limited; retrying in {} ms", wait.toMillis());
+                sleep(wait);
+                wait = wait.multipliedBy(2);
+            }
+        }
+    }
+
+    /**
      * {@link #entity}, retrying only an HTTP 429 (Groq's per-minute token/request limits, which the
      * shared server key hits easily) up to {@code retries} times, waiting {@code backoff} and
      * doubling it each time. A rejected call costs nothing, so retrying is never double-charged.

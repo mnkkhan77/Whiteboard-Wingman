@@ -50,8 +50,8 @@ spring:
       - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
 
   # Study Packs pipeline (docs/study-packs-contract.md). Inside the compose network use kafka:29092.
-  # Values are plain JSON strings (StringSerializer/Deserializer): DocumentEventPublisher and
-  # DocumentEventsListener do the Jackson (de)serialization, so no Java type headers hit the wire.
+  # Values are plain JSON strings (StringSerializer/Deserializer): StudyPackService/OutboxPublisher
+  # and DocumentEventsListener do the Jackson (de)serialization, so no Java type headers hit the wire.
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -88,6 +88,30 @@ spring:
 server:
   port: 8080
 
+# Observability. Health is DOWN-detail-free to an anonymous caller (show-details: when-authorized
+# needs an authenticated Spring Security principal, which this app's JWT filter doesn't produce —
+# this project has no such caller, so it reads as "never"); Prometheus scrapes /actuator/prometheus.
+# SecurityConfig permits every actuator endpoint without auth — see its comment for why, at this
+# scale, that's an accepted tradeoff rather than a separate management port or scrape credentials.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# %X{traceId} is CorrelationIdFilter's per-request correlation id (also sent as a Kafka header by
+# OutboxPublisher and read back by DocumentEventsListener) — not full distributed tracing, just
+# enough to grep one request's logs across the async Study Packs pipeline.
+logging:
+  pattern:
+    level: "%5p [%X{traceId:-}]"
+
 jwt:
   secret: ${JWT_SECRET:change-this-to-a-long-random-secret-in-production-please}
   expiration-ms: 86400000
@@ -118,6 +142,13 @@ app:
       uploaded: wingman.document.uploaded
       parsed: wingman.document.parsed
       failed: wingman.document.failed
+
+  # Transactional outbox poller (OutboxPublisher) — see V23's migration comment for the pattern.
+  outbox:
+    poll-interval-ms: 5000
+    batch-size: 50
+    send-timeout: 10s
+    max-attempts: 10
 
   # Per-tier Study Pack limits (docs/study-packs-contract.md "Tiers"); served to the frontend via
   # GET /api/packs/limits. max-packs -1 = unlimited. File sizes in bytes (10/50/200 MB).
@@ -201,5 +232,20 @@ app:
     max-cards-per-batch: 10
     rate-limit-retries: 2
     rate-limit-backoff: 20s
+    generation-threads: 2
+    queue-capacity: 20
+
+  # Course-outline generation and lazy lesson-content generation for "course from a pack" — see
+  # CourseProperties. One call sampling 20 chunks spread across the document writes 5 modules of
+  # 4 lessons each (titles/summaries only); each lesson's full content is written on first open.
+  course:
+    target-modules: 5
+    lessons-per-module: 4
+    min-lessons: 3
+    outline-sample-chunks: 20
+    rate-limit-retries: 2
+    rate-limit-backoff: 20s
+    lesson-rate-limit-retries: 1
+    lesson-rate-limit-backoff: 5s
     generation-threads: 2
     queue-capacity: 20

@@ -99,6 +99,19 @@ public class StudyPack {
     @Column(length = 500)
     private String flashcardErrorMessage;
 
+    /** The course outline (Phase 6, CourseLesson). Same conditional-update discipline as quizStatus. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private CourseStatus courseStatus = CourseStatus.NONE;
+
+    /** Lessons currently in the outline — kept when a regeneration fails, since the old outline stays. */
+    @Column(nullable = false)
+    private int courseLessonCount = 0;
+
+    /** Safe, user-facing reason for courseStatus FAILED; never exception text. */
+    @Column(length = 500)
+    private String courseErrorMessage;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

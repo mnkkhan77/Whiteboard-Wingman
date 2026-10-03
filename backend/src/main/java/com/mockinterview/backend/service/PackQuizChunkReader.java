@@ -14,15 +14,19 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Reads the chunks a question bank is generated from, spread evenly across the whole pack.
+ * Reads chunks of a pack by position, straight from the vector_store table — despite the name, not
+ * quiz-specific: reused as-is by flashcard-deck and course-outline generation too. Two access
+ * patterns: {@link #readSpread} (an even sample across the whole pack, for a question bank, a
+ * flashcard deck, or the one course-outline call) and {@link #readRange} (a lesson's own
+ * contiguous slice, read lazily when that lesson is first opened).
  *
- * Why by id, straight from the vector_store table: the chunk positions to read are chosen up front
- * ({@link #spreadIndices}), and their vector ids are deterministic
- * (PackEmbeddingService.vectorId), so one primary-key lookup fetches exactly those ~12 rows. The
- * alternatives are worse — a similaritySearch with a packId filter needs a query to embed, returns
- * nearest-to-that-query chunks rather than an even spread, and the HNSW index may return fewer
- * rows than asked when filtering; reading every chunk of the pack (up to 6000) to then keep 12 is
- * wasted I/O. The table is Flyway-owned (V14), so its shape is ours to rely on.
+ * Why by id: the chunk positions to read are chosen up front ({@link #spreadIndices} or a plain
+ * range), and their vector ids are deterministic (PackEmbeddingService.vectorId), so one
+ * primary-key lookup fetches exactly those rows. The alternatives are worse — a similaritySearch
+ * with a packId filter needs a query to embed, returns nearest-to-that-query chunks rather than an
+ * even spread or a specific range, and the HNSW index may return fewer rows than asked when
+ * filtering; reading every chunk of the pack (up to 6000) to then keep a handful is wasted I/O.
+ * The table is Flyway-owned (V14), so its shape is ours to rely on.
  *
  * The packId/ownerId match on the metadata is defense in depth, as in PackRetrievalService.
  */
@@ -61,7 +65,27 @@ public class PackQuizChunkReader {
         if (chunkCount <= 0 || wanted <= 0) {
             return List.of();
         }
-        List<UUID> ids = spreadIndices(chunkCount, wanted).stream()
+        return readByIndices(packId, ownerId, spreadIndices(chunkCount, wanted));
+    }
+
+    /**
+     * Every non-blank chunk in {@code [fromInclusive, toExclusive)}, in document order — a
+     * course lesson's assigned slice (PackCourseGenerator), unlike readSpread's even sample across
+     * the whole pack. Empty once a slice has no chunks left (e.g. a trailing blank run).
+     */
+    public List<SourceChunk> readRange(long packId, long ownerId, int fromInclusive, int toExclusive) {
+        if (toExclusive <= fromInclusive) {
+            return List.of();
+        }
+        List<Integer> indices = new ArrayList<>(toExclusive - fromInclusive);
+        for (int i = fromInclusive; i < toExclusive; i++) {
+            indices.add(i);
+        }
+        return readByIndices(packId, ownerId, indices);
+    }
+
+    private List<SourceChunk> readByIndices(long packId, long ownerId, List<Integer> indices) {
+        List<UUID> ids = indices.stream()
                 .map(i -> UUID.fromString(PackEmbeddingService.vectorId(packId, i)))
                 .toList();
         MapSqlParameterSource params = new MapSqlParameterSource()
