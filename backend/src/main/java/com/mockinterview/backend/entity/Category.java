@@ -4,5 +4,6 @@ package com.mockinterview.backend.entity;
 public enum Category {
     JAVA_BACKEND,
     REACT_FRONTEND,
-    AI_ENGINEERING
+    AI_ENGINEERING,
+    SYSTEM_DESIGN
 }

@@ -3,7 +3,7 @@
 // One of ~160 codes generated from topics/catalog.json on the backend (e.g. "JAVA_COLLECTIONS",
 // "JAVA_C06", "REACT_C18", "AI_C042") — see GET /api/topics / useTopicCatalog for display labels.
 export type Topic = string;
-export type Category = "JAVA_BACKEND" | "REACT_FRONTEND" | "AI_ENGINEERING";
+export type Category = "JAVA_BACKEND" | "REACT_FRONTEND" | "AI_ENGINEERING" | "SYSTEM_DESIGN";
 export type Difficulty = "EASY" | "MEDIUM" | "HARD";
 export type QuestionType = "CONCEPTUAL" | "MCQ" | "CODING";
 export type Correctness = "CORRECT" | "PARTIALLY_CORRECT" | "INCORRECT";

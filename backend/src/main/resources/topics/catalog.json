@@ -1457,5 +1457,113 @@
     "sourcePaths": [
       "react/30-DATA-STRUCTURES-AND-ALGORITHMS.html"
     ]
+  },
+  {
+    "topic": "SD_C01",
+    "category": "SYSTEM_DESIGN",
+    "label": "System Design Fundamentals",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/01-SYSTEM-DESIGN-FUNDAMENTALS.html"
+    ]
+  },
+  {
+    "topic": "SD_C02",
+    "category": "SYSTEM_DESIGN",
+    "label": "CAP Theorem & Consistency Models",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/02-CAP-THEOREM-AND-CONSISTENCY-MODELS.html"
+    ]
+  },
+  {
+    "topic": "SD_C03",
+    "category": "SYSTEM_DESIGN",
+    "label": "Load Balancing & DNS",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/03-LOAD-BALANCING-AND-DNS.html"
+    ]
+  },
+  {
+    "topic": "SD_C04",
+    "category": "SYSTEM_DESIGN",
+    "label": "Caching & CDNs at the Architecture Level",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/04-CACHING-AND-CDNS-AT-THE-ARCHITECTURE-LEVEL.html"
+    ]
+  },
+  {
+    "topic": "SD_C05",
+    "category": "SYSTEM_DESIGN",
+    "label": "Database Replication & Sharding",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/05-DATABASE-REPLICATION-AND-SHARDING.html"
+    ]
+  },
+  {
+    "topic": "SD_C06",
+    "category": "SYSTEM_DESIGN",
+    "label": "Consistent Hashing & Data Partitioning",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/06-CONSISTENT-HASHING-AND-DATA-PARTITIONING.html"
+    ]
+  },
+  {
+    "topic": "SD_C07",
+    "category": "SYSTEM_DESIGN",
+    "label": "Message Queues & Event-Driven Architecture",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/07-MESSAGE-QUEUES-AND-EVENT-DRIVEN-ARCHITECTURE.html"
+    ]
+  },
+  {
+    "topic": "SD_C08",
+    "category": "SYSTEM_DESIGN",
+    "label": "Rate Limiting, Throttling & Backpressure",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/08-RATE-LIMITING-THROTTLING-AND-BACKPRESSURE.html"
+    ]
+  },
+  {
+    "topic": "SD_C09",
+    "category": "SYSTEM_DESIGN",
+    "label": "Consensus & Distributed Coordination",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/09-CONSENSUS-AND-DISTRIBUTED-COORDINATION.html"
+    ]
+  },
+  {
+    "topic": "SD_C10",
+    "category": "SYSTEM_DESIGN",
+    "label": "Designing a URL Shortener",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/10-DESIGNING-A-URL-SHORTENER.html"
+    ]
+  },
+  {
+    "topic": "SD_C11",
+    "category": "SYSTEM_DESIGN",
+    "label": "Designing a Chat & Messaging System",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/11-DESIGNING-A-CHAT-AND-MESSAGING-SYSTEM.html"
+    ]
+  },
+  {
+    "topic": "SD_C12",
+    "category": "SYSTEM_DESIGN",
+    "label": "Designing a Social Media News Feed",
+    "sourceType": "REMOTE",
+    "sourcePaths": [
+      "system-design/12-DESIGNING-A-SOCIAL-MEDIA-NEWS-FEED.html"
+    ]
   }
 ]
