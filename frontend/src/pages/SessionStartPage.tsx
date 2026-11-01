@@ -11,7 +11,7 @@ import { useTopicCatalog } from "../hooks/useTopicCatalog";
 import { CATEGORY_META } from "../constants/topicCategories";
 import type { Category, Difficulty, Topic, TopicRecommendationResponse } from "../types/api";
 
-const CATEGORIES: Category[] = ["JAVA_BACKEND", "REACT_FRONTEND", "AI_ENGINEERING"];
+const CATEGORIES: Category[] = ["JAVA_BACKEND", "REACT_FRONTEND", "AI_ENGINEERING", "SYSTEM_DESIGN"];
 
 const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: "EASY", label: "Easy" },

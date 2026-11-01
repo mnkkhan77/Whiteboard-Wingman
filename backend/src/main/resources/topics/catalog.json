@@ -28,15 +28,6 @@
     ]
   },
   {
-    "topic": "SYSTEM_DESIGN",
-    "category": "JAVA_BACKEND",
-    "label": "System Design",
-    "sourceType": "CLASSPATH",
-    "sourcePaths": [
-      "interview-content/system_design/20-SYSTEM-DESIGN-FOR-4-YEAR-BACKEND-ENGINEER.html"
-    ]
-  },
-  {
     "topic": "AI_C01",
     "category": "AI_ENGINEERING",
     "label": "What Is Intelligence",

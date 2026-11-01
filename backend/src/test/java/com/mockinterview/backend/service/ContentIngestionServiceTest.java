@@ -26,9 +26,10 @@ import static org.mockito.Mockito.when;
 /**
  * Runs against the real handbook HTML files bundled under src/main/resources/interview-content
  * (no mocking of the HTML parsing itself) — only the VectorStore and the topic catalog are
- * mocked, the latter stubbed down to the same 4 classpath-vendored topics the catalog originally
- * had, so this stays a fast, fully offline test even though the real catalog now also lists ~160
- * topics fetched live from GitHub (see ContentIngestionService).
+ * mocked, the latter stubbed down to the 3 classpath-vendored topics the catalog still has
+ * (SYSTEM_DESIGN, the 4th original one, was retired — see Topic's javadoc), so this stays a fast,
+ * fully offline test even though the real catalog now also lists ~170 topics fetched live from
+ * GitHub (see ContentIngestionService).
  */
 @ExtendWith(MockitoExtension.class)
 class ContentIngestionServiceTest {
@@ -44,9 +45,7 @@ class ContentIngestionServiceTest {
                             "interview-content/spring/09-SPRING-CORE.html",
                             "interview-content/spring/10-SPRING-BOOT.html")),
             new TopicCatalogEntry(Topic.DSA, Category.JAVA_BACKEND, "Data Structures & Algorithms",
-                    TopicCatalogEntry.SourceType.CLASSPATH, List.of("interview-content/dsa/29-DATA-STRUCTURES-AND-ALGORITHMS.html")),
-            new TopicCatalogEntry(Topic.SYSTEM_DESIGN, Category.JAVA_BACKEND, "System Design",
-                    TopicCatalogEntry.SourceType.CLASSPATH, List.of("interview-content/system_design/20-SYSTEM-DESIGN-FOR-4-YEAR-BACKEND-ENGINEER.html"))
+                    TopicCatalogEntry.SourceType.CLASSPATH, List.of("interview-content/dsa/29-DATA-STRUCTURES-AND-ALGORITHMS.html"))
     );
 
     private ContentIngestionService service() {
@@ -83,7 +82,7 @@ class ContentIngestionServiceTest {
 
         service.ingestAll();
 
-        verify(vectorStore, times(5)).add(captor.capture());
+        verify(vectorStore, times(4)).add(captor.capture());
         Document someDoc = captor.getAllValues().stream()
                 .flatMap(List::stream)
                 .findFirst()
@@ -102,13 +101,13 @@ class ContentIngestionServiceTest {
         service.ingestAll();
         service.ingestAll();
 
-        verify(vectorStore, times(10)).add(captor.capture());
+        verify(vectorStore, times(8)).add(captor.capture());
         // One delete-by-(topic, sourceFile) filter per source file, per run.
-        verify(vectorStore, times(10)).delete(any(Filter.Expression.class));
+        verify(vectorStore, times(8)).delete(any(Filter.Expression.class));
 
         List<List<Document>> batches = captor.getAllValues();
-        List<String> firstRunIds = batches.subList(0, 5).stream().flatMap(List::stream).map(Document::getId).toList();
-        List<String> secondRunIds = batches.subList(5, 10).stream().flatMap(List::stream).map(Document::getId).toList();
+        List<String> firstRunIds = batches.subList(0, 4).stream().flatMap(List::stream).map(Document::getId).toList();
+        List<String> secondRunIds = batches.subList(4, 8).stream().flatMap(List::stream).map(Document::getId).toList();
         // Same ids both runs -> PgVectorStore upserts rather than duplicating rows; and they must be
         // UUIDs, since that's the vector_store.id column type (Flyway V14).
         assertThat(secondRunIds).isEqualTo(firstRunIds);

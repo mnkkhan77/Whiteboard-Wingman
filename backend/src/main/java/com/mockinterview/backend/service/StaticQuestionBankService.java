@@ -21,11 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Phase 1 question source: a fixed bank loaded from src/main/resources/questions/*.json for the
- * 4 original vendored topics, plus MCQ banks fetched live from the handbook's GitHub repo (same
+ * 3 original vendored topics, plus MCQ banks fetched live from the handbook's GitHub repo (same
  * "mnkkhan77/java-backend-interview-handbook" repo ContentIngestionService reads chapters from,
  * under its mcq/ folder — one JSON file per chapter, mirroring that chapter's path) for every
  * other REMOTE topic in the catalog. Replaced by RAG retrieval (QuestionSelectionService) for the
  * verbal round — this class only ever backs the MCQ/coding rounds.
+ *
+ * Topic.SYSTEM_DESIGN (the 4th original vendored topic) was retired in favor of the dedicated
+ * SD_C01..SD_C12 REMOTE track and is deliberately absent from this map — see Topic's javadoc.
  */
 @Slf4j
 @Service
@@ -34,8 +37,7 @@ public class StaticQuestionBankService {
     private static final Map<Topic, String> RESOURCE_BY_TOPIC = Map.of(
             Topic.JAVA_COLLECTIONS, "questions/java_collections.json",
             Topic.SPRING, "questions/spring.json",
-            Topic.DSA, "questions/dsa.json",
-            Topic.SYSTEM_DESIGN, "questions/system_design.json"
+            Topic.DSA, "questions/dsa.json"
     );
 
     private static final String GITHUB_RAW_BASE =

@@ -3,10 +3,16 @@ package com.mockinterview.backend.entity;
 /**
  * One constant per interview-content chapter, generated from
  * src/main/resources/topics/catalog.json (see TopicCatalogService) — that file, not this
- * enum, is the source of truth for a topic's category/label/source. The 4 original topics
- * (JAVA_COLLECTIONS/SPRING/DSA/SYSTEM_DESIGN) keep their names for backward compatibility with
- * existing rows; everything else uses a short generated code (<CATEGORY>_C<chapter number>)
- * since ~160 semantic names would not fit the topic columns' VARCHAR(30).
+ * enum, is the source of truth for a topic's category/label/source. The 3 original topics
+ * (JAVA_COLLECTIONS/SPRING/DSA) keep their names for backward compatibility with existing rows;
+ * everything else uses a short generated code (<CATEGORY>_C<chapter number>) since ~160 semantic
+ * names would not fit the topic columns' VARCHAR(30).
+ *
+ * SYSTEM_DESIGN is retired: it was the 4th original topic (vendored to the single old
+ * java/20 chapter) and is no longer in catalog.json, so it can't be selected for a new session —
+ * superseded by the dedicated SD_C01..SD_C12 track below. The constant itself stays here, unused
+ * by any catalog entry, purely so existing DB rows and vector-store chunks still tagged with it
+ * (from before this retirement) continue to deserialize instead of throwing.
  */
 public enum Topic {
 
@@ -19,8 +25,8 @@ public enum Topic {
     // ---- AI_ENGINEERING ----
     AI_C01, AI_C02, AI_C03, AI_C04, AI_C05, AI_C06, AI_C07, AI_C08, AI_C09, AI_C10, AI_C100, AI_C101, AI_C11, AI_C12, AI_C13, AI_C14, AI_C15, AI_C16, AI_C17, AI_C18, AI_C19, AI_C20, AI_C21, AI_C22, AI_C23, AI_C24, AI_C25, AI_C26, AI_C27, AI_C28, AI_C29, AI_C30, AI_C31, AI_C32, AI_C33, AI_C34, AI_C35, AI_C36, AI_C37, AI_C38, AI_C39, AI_C40, AI_C41, AI_C42, AI_C43, AI_C44, AI_C45, AI_C46, AI_C47, AI_C48, AI_C49, AI_C50, AI_C51, AI_C52, AI_C53, AI_C54, AI_C55, AI_C56, AI_C57, AI_C58, AI_C59, AI_C60, AI_C61, AI_C62, AI_C63, AI_C64, AI_C65, AI_C66, AI_C67, AI_C68, AI_C69, AI_C70, AI_C71, AI_C72, AI_C73, AI_C74, AI_C75, AI_C76, AI_C77, AI_C78, AI_C79, AI_C80, AI_C81, AI_C82, AI_C83, AI_C84, AI_C85, AI_C86, AI_C87, AI_C88, AI_C89, AI_C90, AI_C91, AI_C92, AI_C93, AI_C94, AI_C95, AI_C96, AI_C97, AI_C98, AI_C99,
 
-    // ---- SYSTEM_DESIGN (the dedicated 12-chapter track, distinct from the legacy SYSTEM_DESIGN
-    // topic above which stays vendored to the old single java/20 chapter) ----
+    // ---- SYSTEM_DESIGN (the dedicated 12-chapter track that supersedes the legacy
+    // SYSTEM_DESIGN topic above) ----
     SD_C01, SD_C02, SD_C03, SD_C04, SD_C05, SD_C06, SD_C07, SD_C08, SD_C09, SD_C10, SD_C11, SD_C12
 
 }
