@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -312,8 +313,24 @@ public class InterviewSessionService {
         question.setPromptText(entry.promptText());
         question.setQuestionType(entry.questionType());
         question.setSourceChunkId(entry.id());
-        question.setOptions(entry.options() != null ? entry.options() : List.of());
-        question.setCorrectOptionIndex(entry.correctOptionIndex());
+        // Many bank files store the correct option at a fixed position (historically index 0),
+        // which makes the answer guessable regardless of content. Reshuffling per-question here,
+        // at the moment it's assigned to a session, fixes that for every bank uniformly (including
+        // ones authored correctly already, and any ingested in the future) without needing the
+        // source JSON itself to be rewritten.
+        if (entry.questionType() == QuestionType.MCQ && entry.options() != null && !entry.options().isEmpty()
+                && entry.correctOptionIndex() != null) {
+            List<Integer> order = new ArrayList<>();
+            for (int i = 0; i < entry.options().size(); i++) {
+                order.add(i);
+            }
+            Collections.shuffle(order);
+            question.setOptions(order.stream().map(entry.options()::get).toList());
+            question.setCorrectOptionIndex(order.indexOf(entry.correctOptionIndex()));
+        } else {
+            question.setOptions(entry.options() != null ? entry.options() : List.of());
+            question.setCorrectOptionIndex(entry.correctOptionIndex());
+        }
         question.setExplanation(entry.explanation());
         question.setIoFormat(entry.ioFormat());
         question.setTestCases(toEntityTestCases(entry.testCases()));
